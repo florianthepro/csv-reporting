@@ -29,8 +29,8 @@ Eine vorhandene Installation wird zuerst vollständig unter `/var/backups/csv-re
 
 Ein belegter Port beendet das Setup nicht mehr. Es zeigt verfügbare Ports in `8080-8090` beziehungsweise `8443-8453` und fragt erneut. Ein Port der bestehenden eigenen Caddy-Site wird als `aktuell` und wiederverwendbar angezeigt.
 
-## Version 8
+## Version 9
 
-Das Setup zeigt beim Start `CSV Reporting Setup v8`. Fehlt diese Zeile, liegt im GitHub-Branch noch ein älteres `setup.sh`. Frontend-Dateien verwenden Cache-Busting und Caddy liefert `Cache-Control: no-store`, damit nach einem Upgrade nicht altes JavaScript mit neuem HTML gemischt wird.
+Das Setup zeigt beim Start `CSV Reporting Setup v9`. Fehlt diese Zeile, liegt im GitHub-Branch noch ein älteres `setup.sh`. Frontend-Dateien verwenden Cache-Busting und Caddy liefert `Cache-Control: no-store`, damit nach einem Upgrade nicht altes JavaScript mit neuem HTML gemischt wird.
 
 Der Import akzeptiert `.json` und erkennt zusätzlich Metadaten aus einer alten `index.php`. Wenn die PHP-Datei kein eindeutig eingebettetes Regel-JSON enthält, fordert die Oberfläche verständlich die alte `csv-reporting.json` an.
