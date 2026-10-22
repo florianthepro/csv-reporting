@@ -12,7 +12,7 @@ GUNICORN_VERSION="23.*"
 DEFAULT_HTTP_PORT="8080"
 DEFAULT_HTTPS_PORT="8443"
 LOG="/tmp/$PROJECT_PATH-setup.log"
-SETUP_VERSION="15"
+SETUP_VERSION="16"
 
 step(){ printf '[%s/10] %-18s %s\n' "$1" "$2" "$3"; }
 fail(){ printf '\nFehler: %s\nLog: %s\n' "$1" "$LOG" >&2; tail -n 15 "$LOG" 2>/dev/null >&2 || true; exit 1; }
@@ -28,6 +28,7 @@ choose_port(){ default="$1"; first="$2"; last="$3"; while :; do printf 'Verfügb
 ' >/dev/tty; continue;; esac; if [ "$chosen" -lt 1 ] || [ "$chosen" -gt 65535 ]; then printf 'Bitte Port 1-65535 eingeben.
 ' >/dev/tty; continue; fi; if port_available "$chosen"; then printf '%s' "$chosen"; return; fi; owner="$(process_on "$chosen")"; [ -n "$owner" ] || owner="anderem Dienst"; printf 'Port %s ist durch %s belegt. Bitte anderen Port wählen.
 ' "$chosen" "$owner" >/dev/tty; done; }
+auto_port(){ first="$1"; last="$2"; count=$((last-first+1)); seed=$(($(date +%s)+$$)); offset=$((seed%count)); i=0; while [ "$i" -lt "$count" ]; do port=$((first+(offset+i)%count)); if port_available "$port"; then printf '%s' "$port"; return 0; fi; i=$((i+1)); done; fail "Kein freier Port im Bereich $first-$last."; }
 lan_ip(){ ip -4 route get 1.1.1.1 2>/dev/null | sed -n 's/.* src \([^ ]*\).*/\1/p' | head -n1; }
 
 init(){
@@ -138,42 +139,32 @@ install_questions(){
  case "$MODE" in
   1)
    IP="$(ask "LAN-IP" "$(lan_ip)")"; [ -n "$IP" ] || fail "Keine LAN-IP erkannt."
-   printf '[1] HTTPS intern\n[2] HTTPS mit Zertifikat\n[3] HTTP\n'
-   TLS_MODE="$(ask "Verbindung" "1")"
-   case "$TLS_MODE" in
-    1) SCHEME=https; PORT="$(choose_port "$DEFAULT_HTTPS_PORT" 8443 8453)"; TLS_LINE='    tls internal';;
-    2) SCHEME=https; PORT="$(choose_port "$DEFAULT_HTTPS_PORT" 8443 8453)"; CERT="$(ask "Zertifikat" "/etc/ssl/certs/$PROJECT_PATH.pem")"; KEY="$(ask "Schlüssel" "/etc/ssl/private/$PROJECT_PATH.key")"; [ -r "$CERT" ] && [ -r "$KEY" ] || fail "Zertifikatsdateien nicht lesbar."; TLS_LINE="    tls $CERT $KEY";;
-    3) SCHEME=http; PORT="$(choose_port "$DEFAULT_HTTP_PORT" 8080 8090)"; TLS_LINE='';;
-    *) fail "Ungültige Auswahl.";;
-   esac
-   ADDRESS="$SCHEME://$IP:$PORT"; BIND_LINE="    bind $IP"; ALLOWED="$IP,localhost,127.0.0.1"; HTTPS=$([ "$SCHEME" = https ] && echo true || echo false); DISABLE_REDIRECTS=true
+   TLS_MODE=1; SCHEME=https; PORT="$(auto_port 8443 8453)"; TLS_LINE='    tls internal'
+   printf 'HTTPS intern: %s:%s\n' "$IP" "$PORT"
+   ADDRESS="$SCHEME://$IP:$PORT"; BIND_LINE="    bind $IP"; ALLOWED="$IP,localhost,127.0.0.1"; HTTPS=true; DISABLE_REDIRECTS=true
    ;;
   2)
    for SERVICE in apache2 nginx lighttpd; do if systemctl is-active --quiet "$SERVICE" 2>/dev/null; then systemctl disable --now "$SERVICE" >>"$LOG" 2>&1 || fail "$SERVICE konnte nicht gestoppt werden."; fi; done
    listens 80 && fail "Port 80 bleibt durch einen unbekannten Dienst belegt."
    listens 443 && fail "Port 443 bleibt durch einen unbekannten Dienst belegt."
-   printf '[1] HTTPS automatisch\n[2] HTTPS mit Zertifikat\n[3] HTTP\n'
-   TLS_MODE="$(ask "Verbindung" "1")"; IP="$(ask "Domain oder IP" "localhost")"; BIND_LINE=''; ALLOWED="$IP,localhost,127.0.0.1"; DISABLE_REDIRECTS=false
-   case "$TLS_MODE" in
-    1) ADDRESS="$IP"; TLS_LINE=''; HTTPS=true;;
-    2) CERT="$(ask "Zertifikat" "/etc/ssl/certs/$PROJECT_PATH.pem")"; KEY="$(ask "Schlüssel" "/etc/ssl/private/$PROJECT_PATH.key")"; [ -r "$CERT" ] && [ -r "$KEY" ] || fail "Zertifikatsdateien nicht lesbar."; ADDRESS="$IP"; TLS_LINE="    tls $CERT $KEY"; HTTPS=true;;
-    3) ADDRESS="http://$IP"; TLS_LINE=''; HTTPS=false;;
-    *) fail "Ungültige Auswahl.";;
-   esac
+   TLS_MODE=1; IP="$(ask "Domain oder IP" "$(lan_ip)")"; BIND_LINE=''; ALLOWED="$IP,localhost,127.0.0.1"; DISABLE_REDIRECTS=false
+   ADDRESS="https://$IP"; TLS_LINE='    tls internal'; HTTPS=true
+   printf 'HTTPS intern: %s:443\n' "$IP"
    ;;
   q|Q) exit 0;; *) fail "Ungültige Auswahl.";;
  esac
- OLD_CSV=""; OLD_EDITOR=""; [ ! -r "$ENV" ] || { OLD_CSV="$(sed -n 's/^CSV_REMOTE_URL=//p' "$ENV" | head -n1)"; OLD_EDITOR="$(sed -n 's/^CSV_EDITOR_ENABLED=//p' "$ENV" | head -n1)"; }
- [ -n "$OLD_CSV" ] || OLD_CSV="https://hey.com/csv.csv"; [ -n "$OLD_EDITOR" ] || OLD_EDITOR=false
- CSV_URL="$(ask "CSV-Quell-URL" "$OLD_CSV")"
- EDITOR="$(ask "Regel-Editor (true/false)" "$OLD_EDITOR")"
+ CSV_URL=""
+ EDITOR=true
  URL="$ADDRESS${PROJECT_URL_PATH%/}/"
 }
 
 packages(){ export DEBIAN_FRONTEND=noninteractive; apt-get update -qq >>"$LOG" 2>&1 && apt-get install -y -qq --no-install-recommends ca-certificates caddy curl git iproute2 openssl postgresql python3 python3-pip python3-venv >>"$LOG" 2>&1 || fail "Paketinstallation fehlgeschlagen."; step 1 System OK; }
 
 directories(){
- id "$USER" >/dev/null 2>&1 || useradd --system --user-group --home-dir "$PROJECT_ROOT" --create-home --shell /usr/sbin/nologin "$USER"
+ if ! id "$USER" >/dev/null 2>&1; then
+  if getent group "$USER" >/dev/null 2>&1; then useradd --system -g "$USER" --home-dir "$PROJECT_ROOT" --create-home --shell /usr/sbin/nologin "$USER"
+  else useradd --system --user-group --home-dir "$PROJECT_ROOT" --create-home --shell /usr/sbin/nologin "$USER"; fi
+ fi
  install -d -o root -g "$USER" -m 0750 "$PROJECT_ROOT" "$APP" "$VENV" "$PROJECT_ROOT/caddy"
  install -d -o "$USER" -g "$USER" -m 0750 "$DATA" "$STATE"
  install -d -o root -g "$USER" -m 0750 "$(dirname "$ENV")"; install -d -o root -g root -m 0755 /etc/caddy "$SITES"; usermod -aG "$USER" caddy
@@ -304,9 +295,10 @@ verify(){
  if ! systemctl restart caddy >>"$LOG" 2>&1; then journalctl -u caddy -n 30 --no-pager >>"$LOG" 2>&1 || true; fail "Caddy startet nicht."; fi
  n=0; until curl -fsS --unix-socket "$SOCK" -H 'Host: localhost' http://localhost/api/health >/dev/null 2>&1; do n=$((n+1)); [ "$n" -lt 20 ] || fail "Backend-Health-Check fehlgeschlagen."; sleep 1; done
  step 9 Erreichbarkeit OK
- runuser -u "$USER" -- sh -c "set -a; . '$ENV'; set +a; cd '$APP'; '$VENV/bin/python' backend.py refresh" >>"$LOG" 2>&1 || fail "CSV-Abruf oder CSV-Format fehlerhaft."
- if [ "$HTTPS" = true ]; then curl -kfsS --max-time 10 "$URL" >/dev/null 2>&1 || fail "HTTPS-Frontend nicht erreichbar."; else curl -fsS --max-time 10 "$URL" >/dev/null 2>&1 || fail "Frontend nicht erreichbar."; fi
- step 10 CSV OK; printf '\nURL: %s\n' "$URL"; [ "$MODE" = 1 ] && [ "$TLS_MODE" = 1 ] && printf 'CA:  /var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt\n'; printf 'Log: %s\n' "$LOG"
+ if [ -n "$CSV_URL" ]; then runuser -u "$USER" -- sh -c "set -a; . '$ENV'; set +a; cd '$APP'; '$VENV/bin/python' backend.py refresh" >>"$LOG" 2>&1 || fail "CSV-Abruf oder CSV-Format fehlerhaft."; fi
+ CA_SOURCE="/var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt"; if [ -r "$CA_SOURCE" ]; then cp "$CA_SOURCE" "$STATE/csv-reporting-ca.crt"; chown "$USER:$USER" "$STATE/csv-reporting-ca.crt"; chmod 0644 "$STATE/csv-reporting-ca.crt"; fi
+ curl -kfsS --max-time 10 "$URL" >/dev/null 2>&1 || fail "HTTPS-Frontend nicht erreichbar."
+ if [ -n "$CSV_URL" ]; then step 10 CSV OK; else step 10 Einrichtung WEBGUI; fi; printf '\nURL: %s\n' "$URL"; [ "$MODE" = 1 ] && [ "$TLS_MODE" = 1 ] && printf 'CA:  /var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt\n'; printf 'Log: %s\n' "$LOG"
 }
 
 main(){

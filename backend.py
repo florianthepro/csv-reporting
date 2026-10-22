@@ -6,16 +6,16 @@ def pip(x): subprocess.run([sys.executable,'-m','pip','install',x],check=True)
 if len(sys.argv)>1 and sys.argv[1]=='install':
  p=argparse.ArgumentParser();p.add_argument('command');p.add_argument('--django-version',default='5.2.*');p.add_argument('--gunicorn-version',default='23.*');a=p.parse_args();pip(f'Django=={a.django_version}');pip(f'gunicorn=={a.gunicorn_version}');pip('psycopg[binary]>=3.2,<4');raise SystemExit
 from django.conf import settings
-STATE=Path(os.getenv('STATE_DIRECTORY','/var/lib/csv-reporting/state'));CONFIG=STATE/'csv-reporting.json';CACHE=STATE/'latest.csv';URL=os.getenv('CSV_REMOTE_URL','');EDIT=os.getenv('CSV_EDITOR_ENABLED','false')=='true';LIMIT=int(os.getenv('CSV_MAX_DOWNLOAD_BYTES','10485760'))
+STATE=Path(os.getenv('STATE_DIRECTORY','/var/lib/csv-reporting/state'));CONFIG=STATE/'csv-reporting.json';CACHE=STATE/'latest.csv';ENV_URL=os.getenv('CSV_REMOTE_URL','');EDIT=os.getenv('CSV_EDITOR_ENABLED','true')=='true';LIMIT=int(os.getenv('CSV_MAX_DOWNLOAD_BYTES','10485760'))
 settings.configure(DEBUG=False,SECRET_KEY=os.environ['DJANGO_SECRET_KEY'],ALLOWED_HOSTS=[x for x in os.getenv('DJANGO_ALLOWED_HOSTS','localhost').split(',') if x],ROOT_URLCONF=__name__,INSTALLED_APPS=['django.contrib.contenttypes'],MIDDLEWARE=['django.middleware.security.SecurityMiddleware','django.middleware.common.CommonMiddleware','django.middleware.csrf.CsrfViewMiddleware','django.middleware.clickjacking.XFrameOptionsMiddleware'],DATABASES={'default':{'ENGINE':'django.db.backends.postgresql','NAME':os.environ['DATABASE_NAME'],'USER':os.environ['DATABASE_USER'],'PASSWORD':os.environ['DATABASE_PASSWORD'],'HOST':'127.0.0.1','PORT':'5432'}},CSRF_COOKIE_SECURE=os.getenv('DJANGO_HTTPS')=='true',SECURE_PROXY_SSL_HEADER=('HTTP_X_FORWARDED_PROTO','https'),USE_TZ=True)
 import django;django.setup()
 from django.core.management import call_command
 from django.core.wsgi import get_wsgi_application
-from django.http import JsonResponse,HttpResponse
+from django.http import JsonResponse,HttpResponse,FileResponse
 from django.urls import path
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_GET,require_http_methods
-DEFAULT={'format':'csv-reporting','version':2,'title':'CSV Reporting','heading':'CSV Reporting System','show_columns':[],'column_renames':{},'rules':[],'enable_links':False,'column_links':{},'download_filters':{}}
+DEFAULT={'format':'csv-reporting','version':2,'title':'CSV Reporting','heading':'CSV Reporting System','show_columns':[],'column_renames':{},'rules':[],'enable_links':False,'column_links':{},'download_filters':{},'source_url':ENV_URL}
 def delimiter(t):
  f=t.splitlines()[0] if t.splitlines() else t;c={',':f.count(','),';':f.count(';'),'\t':f.count('\t')};d=max(c,key=c.get);return d if c[d] else ','
 def parse(t):
@@ -24,11 +24,13 @@ def parse(t):
  if any(len(x)!=len(r[0]) for x in r[:10]):raise ValueError('CSV-Spaltenanzahl ist inkonsistent.')
  h=[x.strip() for x in r[0]];return h,[dict(zip(h,x)) for x in r[1:]],d
 def fetch():
- if urllib.parse.urlparse(URL).scheme not in ('http','https'):raise ValueError('CSV-URL ungültig.')
+ url=str(config().get('source_url') or ENV_URL).strip()
+ if not url:raise ValueError('CSV-Quelle zuerst im Editor eintragen.')
+ if urllib.parse.urlparse(url).scheme not in ('http','https'):raise ValueError('CSV-URL ungültig.')
  errors=[]
  for method,data in [('POST',urllib.parse.urlencode({'downloadBtn':'1'}).encode()),('GET',None)]:
   try:
-   q=urllib.request.Request(URL,data=data,method=method,headers={'Accept':'text/csv,text/plain,*/*;q=.1','User-Agent':'CSV-Reporting/3'})
+   q=urllib.request.Request(url,data=data,method=method,headers={'Accept':'text/csv,text/plain,*/*;q=.1','User-Agent':'CSV-Reporting/3'})
    with urllib.request.urlopen(q,timeout=60) as z:raw=z.read(LIMIT+1);enc=z.headers.get_content_charset() or 'utf-8'
    if len(raw)>LIMIT:raise ValueError('CSV zu groß.')
    t=raw.decode(enc);parse(t);return t
@@ -47,6 +49,7 @@ def normalize(v):
  for k in ('column_renames','column_links','download_filters'):
   if isinstance(out.get(k),list) and not out[k]:out[k]={}
   if not isinstance(out.get(k),dict):raise ValueError(f'{k} muss ein Objekt oder eine leere Liste sein.')
+ out['source_url']=str(out.get('source_url') or '').strip()
  out['enable_links']=bool(out.get('enable_links'));out['title']=str(out.get('title') or DEFAULT['title']);out['heading']=str(out.get('heading') or DEFAULT['heading']);out['format']='csv-reporting';out['version']=2
  for k in aliases:out.pop(k,None)
  out['download_filters']={str(k):[str(x) for x in (vals if isinstance(vals,list) else [vals])] for k,vals in out['download_filters'].items()}
@@ -95,14 +98,22 @@ def data(r):
 def cfg(r):
  if r.method=='GET':return JsonResponse({'config':config(),'editable':EDIT})
  if not EDIT:return JsonResponse({'error':'Editor deaktiviert.'},status=403)
- try:return JsonResponse({'saved':True,'config':save(json.loads(r.body))})
+ try:
+  old=config().get('source_url','');new=save(json.loads(r.body))
+  if new.get('source_url','')!=old:CACHE.unlink(missing_ok=True)
+  return JsonResponse({'saved':True,'config':new})
  except Exception as e:return JsonResponse({'error':str(e)},status=400)
+@require_GET
+def certificate(r):
+ p=STATE/'csv-reporting-ca.crt'
+ if not p.is_file():return JsonResponse({'error':'Internes CA-Zertifikat nicht verfügbar.'},status=404)
+ return FileResponse(open(p,'rb'),as_attachment=True,filename='csv-reporting-ca.crt',content_type='application/x-x509-ca-cert')
 @require_GET
 def raw(r):
  try:
   h,rows,d=dataset(r.GET.get('refresh')=='1');o=io.StringIO();w=csv.DictWriter(o,fieldnames=h,delimiter=d);w.writeheader();w.writerows(rows);return HttpResponse(o.getvalue(),content_type='text/csv')
  except Exception as e:return JsonResponse({'error':str(e)},status=502)
-urlpatterns=[path('api/health',health),path('api/data',data),path('api/config',cfg),path('api/raw',raw)]
+urlpatterns=[path('api/health',health),path('api/data',data),path('api/config',cfg),path('api/certificate',certificate),path('api/raw',raw)]
 application=get_wsgi_application()
 if __name__=='__main__':
  p=argparse.ArgumentParser();p.add_argument('command',choices=['check','migrate','refresh']);a=p.parse_args();call_command(a.command,'--deploy') if a.command=='check' else call_command('migrate',interactive=False) if a.command=='migrate' else (dataset(True),print('CSV aktualisiert.'))

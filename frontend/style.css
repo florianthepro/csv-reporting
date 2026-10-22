@@ -16,3 +16,4 @@ main{width:100%;min-width:0}main>h2{min-height:42px;margin:0 0 14px;padding-left
 @media(max-width:700px){.editorShell{grid-template-columns:1fr}.editorTabs{grid-template-columns:repeat(3,minmax(0,1fr))}#ruleDialog .condition{grid-template-columns:1fr 1fr auto 30px}}
 /* V11: Header immer einzeilig; Datenbreite basiert auf dem Mittelwert der ganzen Spalte. */
 thead th{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;word-break:normal;overflow-wrap:normal}tbody td{white-space:normal;word-break:normal;overflow-wrap:break-word}
+.certBox{display:grid;gap:5px;margin-top:10px;padding:8px;border:1px solid var(--border);background:var(--bg);font-size:13px}.buttonLink{justify-self:start;padding:5px 8px;border:1px solid var(--border);border-radius:3px;text-decoration:none;color:var(--fg);background:var(--panel)}
