@@ -58,7 +58,9 @@ def config():
  try:return normalize(json.loads(CONFIG.read_text()))
  except Exception:return DEFAULT.copy()
 def save(v):
- v=normalize(v);STATE.mkdir(parents=True,exist_ok=True);p=CONFIG.with_suffix('.tmp');p.write_text(json.dumps(v,ensure_ascii=False,indent=2));p.replace(CONFIG);return v
+ v=normalize(v)
+ if urllib.parse.urlparse(v.get('source_url','')).scheme not in ('http','https'):raise ValueError('CSV-Quell-URL ist erforderlich und muss mit http:// oder https:// beginnen.')
+ STATE.mkdir(parents=True,exist_ok=True);p=CONFIG.with_suffix('.tmp');p.write_text(json.dumps(v,ensure_ascii=False,indent=2));p.replace(CONFIG);return v
 def minutes(v):
  try:d=datetime.strptime(v.strip(),'%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc);return (d-datetime.now(timezone.utc)).total_seconds()/60
  except:return None

@@ -12,7 +12,7 @@ GUNICORN_VERSION="23.*"
 DEFAULT_HTTP_PORT="8080"
 DEFAULT_HTTPS_PORT="8443"
 LOG="/tmp/$PROJECT_PATH-setup.log"
-SETUP_VERSION="16"
+SETUP_VERSION="17"
 
 step(){ printf '[%s/10] %-18s %s\n' "$1" "$2" "$3"; }
 fail(){ printf '\nFehler: %s\nLog: %s\n' "$1" "$LOG" >&2; tail -n 15 "$LOG" 2>/dev/null >&2 || true; exit 1; }
@@ -153,7 +153,11 @@ install_questions(){
    ;;
   q|Q) exit 0;; *) fail "Ungültige Auswahl.";;
  esac
- CSV_URL=""
+ while :; do
+  CSV_URL="$(ask "CSV-Quell-URL" "https://example.invalid/report.csv")"
+  case "$CSV_URL" in http://*|https://*) break;; *) printf 'Bitte vollständige URL mit http:// oder https:// eingeben.
+' >/dev/tty;; esac
+ done
  EDITOR=true
  URL="$ADDRESS${PROJECT_URL_PATH%/}/"
 }

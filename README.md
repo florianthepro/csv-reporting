@@ -28,3 +28,7 @@ Die Konfiguration liegt in `/var/lib/csv-reporting/state/csv-reporting.json`. De
 ## Betrieb
 
 `setup.sh` installiert, aktualisiert, setzt zurück und entfernt die Anwendung. Bestehende Daten werden vor Aktualisierungen gesichert. App und Python-Umgebung werden sauber neu aufgebaut, während Konfiguration, Regeln und Datenbank erhalten bleiben.
+
+## Version 17
+
+Die CSV-Quell-URL ist bei einer Neueinrichtung verpflichtend und muss mit `http://` oder `https://` beginnen. Der Editor bleibt auch ohne erfolgreich geladenen CSV-Datensatz funktionsfähig; Importe greifen nicht mehr auf `null.all_header` zu. Die Zertifikatsverwaltung kann die interne Caddy-CA exportieren sowie ein hochgeladenes Zertifikat samt passendem privaten Schlüssel prüfen und installieren.
