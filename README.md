@@ -18,3 +18,7 @@ Bei einer vorhandenen Installation fragt das Setup, ob aktualisiert oder die Pro
 - `?_page=edit`
 
 Vor der Installation müssen `frontend/index.svg` und `frontend/edit.svg` im Repository vorhanden sein.
+
+## Editor
+
+Änderungen im Editor werden nach etwa 650 ms automatisch gespeichert. Die Bereichsschalter Allgemein, Spalten, Links, Downloadfilter und Regeln zeigen jeweils genau einen Bereich.
