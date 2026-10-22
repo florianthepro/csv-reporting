@@ -12,13 +12,22 @@ GUNICORN_VERSION="23.*"
 DEFAULT_HTTP_PORT="8080"
 DEFAULT_HTTPS_PORT="8443"
 LOG="/tmp/$PROJECT_PATH-setup.log"
+SETUP_VERSION="8"
 
 step(){ printf '[%s/10] %-18s %s\n' "$1" "$2" "$3"; }
 fail(){ printf '\nFehler: %s\nLog: %s\n' "$1" "$LOG" >&2; tail -n 15 "$LOG" 2>/dev/null >&2 || true; exit 1; }
 ask(){ printf '%s [%s]: ' "$1" "$2" >/dev/tty; IFS= read -r v </dev/tty || v=""; [ -n "$v" ] && printf '%s' "$v" || printf '%s' "$2"; }
 listens(){ ss -H -ltn "sport = :$1" 2>/dev/null | grep -q .; }
 process_on(){ ss -H -ltnp "sport = :$1" 2>/dev/null | grep -oE '\(\"[^\"]+' | head -n1 | tr -d '(\"' || true; }
-free_port(){ p="$1"; while listens "$p"; do p=$((p+1)); [ "$p" -le 65535 ] || fail "Kein freier Port gefunden."; done; printf '%s' "$p"; }
+port_ours(){ [ -f "$SITE" ] && grep -Eq "(^|[^0-9]):$1([^0-9]|$)" "$SITE"; }
+port_available(){ ! listens "$1" || port_ours "$1"; }
+free_port(){ p="$1"; while ! port_available "$p"; do p=$((p+1)); [ "$p" -le 65535 ] || fail "Kein freier Port gefunden."; done; printf '%s' "$p"; }
+port_list(){ start="$1"; end="$2"; out=""; p="$start"; while [ "$p" -le "$end" ]; do if port_available "$p"; then if port_ours "$p"; then mark="$p (aktuell)"; else mark="$p"; fi; out="${out}${out:+, }$mark"; fi; p=$((p+1)); done; [ -n "$out" ] && printf '%s' "$out" || printf 'keiner'; }
+choose_port(){ default="$1"; first="$2"; last="$3"; while :; do printf 'Verfügbar %s-%s: %s
+' "$first" "$last" "$(port_list "$first" "$last")" >/dev/tty; chosen="$(ask "Port" "$(free_port "$default")")"; case "$chosen" in ''|*[!0-9]*) printf 'Bitte Port 1-65535 eingeben.
+' >/dev/tty; continue;; esac; if [ "$chosen" -lt 1 ] || [ "$chosen" -gt 65535 ]; then printf 'Bitte Port 1-65535 eingeben.
+' >/dev/tty; continue; fi; if port_available "$chosen"; then printf '%s' "$chosen"; return; fi; owner="$(process_on "$chosen")"; [ -n "$owner" ] || owner="anderem Dienst"; printf 'Port %s ist durch %s belegt. Bitte anderen Port wählen.
+' "$chosen" "$owner" >/dev/tty; done; }
 lan_ip(){ ip -4 route get 1.1.1.1 2>/dev/null | sed -n 's/.* src \([^ ]*\).*/\1/p' | head -n1; }
 
 init(){
@@ -32,17 +41,19 @@ init(){
 }
 
 questions(){
- EXISTING_ACTION=update
+ printf 'CSV Reporting Setup v%s\n' "$SETUP_VERSION"
+ EXISTING_ACTION=install
  if [ -d "$PROJECT_ROOT" ] && [ "$(find "$PROJECT_ROOT" -mindepth 1 -maxdepth 1 -print -quit 2>/dev/null)" ]; then
   printf '
-Projekt vorhanden: %s
+Vorhandene Installation
+%s
 ' "$PROJECT_ROOT"
-  printf '[1] Aktualisieren, App vorher sichern
-[2] Projektdateien und Python-Umgebung neu erstellen
+  printf '[1] Sicher aktualisieren: Vollsicherung, App und Python neu, Daten zurück
+[2] Neu aufbauen: Vollsicherung, App und Python neu, Daten zurück
 [Q] Beenden
 '
   EXISTING_ACTION="$(ask "Auswahl" "1")"
-  case "$EXISTING_ACTION" in 1) EXISTING_ACTION=update;; 2) EXISTING_ACTION=rebuild;; q|Q) exit 0;; *) fail "Ungültige Auswahl.";; esac
+  case "$EXISTING_ACTION" in 1) EXISTING_ACTION=upgrade;; 2) EXISTING_ACTION=rebuild;; q|Q) exit 0;; *) fail "Ungültige Auswahl.";; esac
  fi
  if listens 80 || listens 443; then
   P80="$(process_on 80)"; P443="$(process_on 443)"; [ -n "$P80" ] || P80=belegt; [ -n "$P443" ] || P443=belegt
@@ -56,12 +67,11 @@ Projekt vorhanden: %s
    printf '[1] HTTPS intern\n[2] HTTPS mit Zertifikat\n[3] HTTP\n'
    TLS_MODE="$(ask "Verbindung" "1")"
    case "$TLS_MODE" in
-    1) SCHEME=https; PORT="$(ask "Port" "$(free_port "$DEFAULT_HTTPS_PORT")")"; TLS_LINE='    tls internal';;
-    2) SCHEME=https; PORT="$(ask "Port" "$(free_port "$DEFAULT_HTTPS_PORT")")"; CERT="$(ask "Zertifikat" "/etc/ssl/certs/$PROJECT_PATH.pem")"; KEY="$(ask "Schlüssel" "/etc/ssl/private/$PROJECT_PATH.key")"; [ -r "$CERT" ] && [ -r "$KEY" ] || fail "Zertifikatsdateien nicht lesbar."; TLS_LINE="    tls $CERT $KEY";;
-    3) SCHEME=http; PORT="$(ask "Port" "$(free_port "$DEFAULT_HTTP_PORT")")"; TLS_LINE='';;
+    1) SCHEME=https; PORT="$(choose_port "$DEFAULT_HTTPS_PORT" 8443 8453)"; TLS_LINE='    tls internal';;
+    2) SCHEME=https; PORT="$(choose_port "$DEFAULT_HTTPS_PORT" 8443 8453)"; CERT="$(ask "Zertifikat" "/etc/ssl/certs/$PROJECT_PATH.pem")"; KEY="$(ask "Schlüssel" "/etc/ssl/private/$PROJECT_PATH.key")"; [ -r "$CERT" ] && [ -r "$KEY" ] || fail "Zertifikatsdateien nicht lesbar."; TLS_LINE="    tls $CERT $KEY";;
+    3) SCHEME=http; PORT="$(choose_port "$DEFAULT_HTTP_PORT" 8080 8090)"; TLS_LINE='';;
     *) fail "Ungültige Auswahl.";;
    esac
-   listens "$PORT" && fail "Port $PORT ist belegt."
    ADDRESS="$SCHEME://$IP:$PORT"; BIND_LINE="    bind $IP"; ALLOWED="$IP,localhost,127.0.0.1"; HTTPS=$([ "$SCHEME" = https ] && echo true || echo false); DISABLE_REDIRECTS=true
    ;;
   2)
@@ -79,9 +89,32 @@ Projekt vorhanden: %s
    ;;
   q|Q) exit 0;; *) fail "Ungültige Auswahl.";;
  esac
- CSV_URL="$(ask "CSV-Quell-URL" "https://hey.com/csv.csv")"
- EDITOR="$(ask "Regel-Editor (true/false)" "false")"
+ OLD_CSV=""; OLD_EDITOR=""; [ ! -r "$ENV" ] || { OLD_CSV="$(sed -n 's/^CSV_REMOTE_URL=//p' "$ENV" | head -n1)"; OLD_EDITOR="$(sed -n 's/^CSV_EDITOR_ENABLED=//p' "$ENV" | head -n1)"; }
+ [ -n "$OLD_CSV" ] || OLD_CSV="https://hey.com/csv.csv"; [ -n "$OLD_EDITOR" ] || OLD_EDITOR=false
+ CSV_URL="$(ask "CSV-Quell-URL" "$OLD_CSV")"
+ EDITOR="$(ask "Regel-Editor (true/false)" "$OLD_EDITOR")"
  URL="$ADDRESS${PROJECT_URL_PATH%/}/"
+}
+
+backup_existing(){
+ [ "$EXISTING_ACTION" != install ] || return 0
+ stamp="$(date +%Y%m%d-%H%M%S)"; BACKUP_ROOT="/var/backups/$PROJECT_PATH/$stamp"; install -d -m 0700 "$BACKUP_ROOT"
+ [ ! -d "$APP" ] || cp -a "$APP" "$BACKUP_ROOT/app"
+ [ ! -d "$VENV" ] || cp -a "$VENV" "$BACKUP_ROOT/venv"
+ [ ! -d "$STATE" ] || cp -a "$STATE" "$BACKUP_ROOT/state"
+ [ ! -f "$ENV" ] || cp -a "$ENV" "$BACKUP_ROOT/environment"
+ [ ! -f "$SITE" ] || cp -a "$SITE" "$BACKUP_ROOT/csv-reporting.caddy"
+ [ ! -f "$UNIT" ] || cp -a "$UNIT" "$BACKUP_ROOT/csv-reporting.service"
+ printf 'Sicherung: %s
+' "$BACKUP_ROOT"
+ systemctl stop "$PROJECT_PATH" 2>/dev/null || true
+ rm -rf "$APP" "$VENV"
+}
+restore_data(){
+ [ -n "${BACKUP_ROOT:-}" ] || return 0
+ if [ ! -d "$STATE" ] && [ -d "$BACKUP_ROOT/state" ]; then install -d -o "$USER" -g "$USER" -m 0750 "$DATA"; cp -a "$BACKUP_ROOT/state" "$STATE"; fi
+ if [ ! -f "$ENV" ] && [ -f "$BACKUP_ROOT/environment" ]; then install -d -m 0750 "$(dirname "$ENV")"; cp -a "$BACKUP_ROOT/environment" "$ENV"; fi
+ chown -R "$USER:$USER" "$STATE" 2>/dev/null || true
 }
 
 packages(){ export DEBIAN_FRONTEND=noninteractive; apt-get update -qq >>"$LOG" 2>&1 && apt-get install -y -qq --no-install-recommends ca-certificates caddy curl git iproute2 openssl postgresql python3 python3-pip python3-venv >>"$LOG" 2>&1 || fail "Paketinstallation fehlgeschlagen."; step 1 System OK; }
@@ -186,6 +219,7 @@ $TLS_LINE
     header {
         X-Content-Type-Options nosniff
         Referrer-Policy strict-origin-when-cross-origin
+        Cache-Control "no-store"
         -Server
     }
 }
@@ -222,5 +256,5 @@ verify(){
  step 10 CSV OK; printf '\nURL: %s\n' "$URL"; [ "$MODE" = 1 ] && [ "$TLS_MODE" = 1 ] && printf 'CA:  /var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt\n'; printf 'Log: %s\n' "$LOG"
 }
 
-main(){ init; questions; packages; directories; repository; python_env; database; configuration; backend; web; verify; }
+main(){ init; questions; backup_existing; packages; directories; restore_data; repository; python_env; database; configuration; backend; web; verify; }
 main "$@"
