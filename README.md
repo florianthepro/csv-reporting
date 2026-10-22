@@ -34,3 +34,7 @@ Ein belegter Port beendet das Setup nicht mehr. Es zeigt verfügbare Ports in `8
 Das Setup zeigt beim Start `CSV Reporting Setup v9`. Fehlt diese Zeile, liegt im GitHub-Branch noch ein älteres `setup.sh`. Frontend-Dateien verwenden Cache-Busting und Caddy liefert `Cache-Control: no-store`, damit nach einem Upgrade nicht altes JavaScript mit neuem HTML gemischt wird.
 
 Der Import akzeptiert `.json` und erkennt zusätzlich Metadaten aus einer alten `index.php`. Wenn die PHP-Datei kein eindeutig eingebettetes Regel-JSON enthält, fordert die Oberfläche verständlich die alte `csv-reporting.json` an.
+
+## Version 10
+
+Tabellenspalten werden anhand der Überschrift und einer Stichprobe der ersten 120 Zeilen gewichtet. Sehr kurze Spalten bleiben schmal; lange Inhalte erhalten mehr Platz, ohne die Seite horizontal zu verbreitern. Editor, Regelliste und Regeldialog sind kompakter. Die Regelbeschreibung wird weiterhin automatisch erzeugt, aber nicht mehr als unnötiges Feld angezeigt.
