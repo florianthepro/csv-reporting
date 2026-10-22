@@ -12,7 +12,7 @@ GUNICORN_VERSION="23.*"
 DEFAULT_HTTP_PORT="8080"
 DEFAULT_HTTPS_PORT="8443"
 LOG="/tmp/$PROJECT_PATH-setup.log"
-SETUP_VERSION="14"
+SETUP_VERSION="15"
 
 step(){ printf '[%s/10] %-18s %s\n' "$1" "$2" "$3"; }
 fail(){ printf '\nFehler: %s\nLog: %s\n' "$1" "$LOG" >&2; tail -n 15 "$LOG" 2>/dev/null >&2 || true; exit 1; }
@@ -47,13 +47,14 @@ main_menu(){
  if ! installed; then ACTION=install; return; fi
  printf '
 CSV Reporting
-[1] Update
-[2] Reset
-[3] Delete
+[1] Aktualisieren
+[2] Neu einrichten
+[3] Löschen
+[4] Zertifikat bereitstellen
 [Q] Beenden
 '
  choice="$(ask "Auswahl" "1")"
- case "$choice" in 1) ACTION=update;; 2) ACTION=reset;; 3) ACTION=delete;; q|Q) exit 0;; *) fail "Ungültige Auswahl.";; esac
+ case "$choice" in 1) ACTION=update;; 2) ACTION=reset;; 3) ACTION=delete;; 4) ACTION=certificate;; q|Q) exit 0;; *) fail "Ungültige Auswahl.";; esac
 }
 backup_all(){
  stamp="$(date +%Y%m%d-%H%M%S)"; BACKUP_ROOT="/var/backups/$PROJECT_PATH/$stamp"; install -d -m 0700 "$BACKUP_ROOT"
@@ -182,7 +183,7 @@ directories(){
 repository(){
  T="$(mktemp -d)"; trap 'rm -rf "$T"' EXIT HUP INT TERM
  git clone -q --depth 1 --branch "$PROJECT_BRANCH" "$PROJECT_REPOSITORY" "$T/repo" >>"$LOG" 2>&1 || fail "Repository nicht erreichbar."
- for f in backend.py frontend/index.html frontend/style.css frontend/app.js frontend/index.svg frontend/edit.svg; do [ -f "$T/repo/$f" ] || fail "$f fehlt."; done
+ for f in backend.py get-cert.sh frontend/index.html frontend/style.css frontend/app.js frontend/index.svg frontend/edit.svg; do [ -f "$T/repo/$f" ] || fail "$f fehlt."; done
  [ ! -e "$APP/backend.py" ] || { B="$STATE/backup-$(date +%Y%m%d-%H%M%S)"; mkdir -p "$B"; cp -a "$APP/." "$B/"; }
  find "$APP" -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +; cp -a "$T/repo/." "$APP/"; rm -rf "$APP/.git"
  chown -R root:"$USER" "$APP"; chmod -R u=rwX,g=rX,o= "$APP"; rm -rf "$T"; trap - EXIT HUP INT TERM; step 3 Projekt OK
@@ -318,6 +319,7 @@ main(){
   update) update_existing;;
   reset) reset_existing;;
   delete) delete_existing;;
+  certificate) [ -x "$APP/get-cert.sh" ] || fail "get-cert.sh fehlt. Zuerst aktualisieren."; exec "$APP/get-cert.sh";;
  esac
 }
 main "$@"

@@ -65,3 +65,7 @@ Finaler konsolidierter Stand auf Basis von Version 13. Enthalten sind die einzei
 ## Zertifikatsdownload
 
 `get-cert.sh` (separater Download) fragt die tatsächlich verwendete HTTPS-Adresse ab, liest das dazu ausgelieferte Serverzertifikat, zeigt Subject, Issuer und SAN an und startet anschließend einen temporären HTTP-Downloadserver im lokalen Netz. Installiert wird das Caddy-Root-CA-Zertifikat; das Serverzertifikat wird zusätzlich nur zur Kontrolle angeboten. Der Server endet mit Enter oder Strg+C.
+
+## Version 15
+
+Korrigierte finale ZIP auf Basis des vollständigen Verwaltungsstands. `get-cert.sh` liegt unter dem richtigen Dateinamen im Repository. Das bestehende CLI-Menü wurde vereinheitlicht: Aktualisieren, Neu einrichten, Löschen, Zertifikat bereitstellen und Beenden. Update erhält Konfiguration, Regeln, Cache, Datenbank, IP, Port und TLS; Neu einrichten und Löschen erstellen vorab eine Vollsicherung.

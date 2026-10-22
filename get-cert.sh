@@ -1,134 +1,77 @@
 #!/bin/sh
 set -eu
 
-fail(){ printf '\nFehler: %s\n' "$1" >&2; exit 1; }
-ask(){ printf '%s' "$1" >/dev/tty; IFS= read -r value </dev/tty || value=''; printf '%s' "$value"; }
-need(){ command -v "$1" >/dev/null 2>&1 || fail "$1 fehlt. Installieren: apt-get install -y $2"; }
-listen(){ ss -H -ltn "sport = :$1" 2>/dev/null | grep -q .; }
-free_port(){ p=8765; while listen "$p"; do p=$((p+1)); [ "$p" -le 8999 ] || fail 'Kein freier Port zwischen 8765 und 8999.'; done; printf '%s' "$p"; }
-local_ip(){ ip -4 route get 1.1.1.1 2>/dev/null | sed -n 's/.* src \([^ ]*\).*/\1/p' | head -n1; }
-
-[ "$(id -u)" -eq 0 ] || fail 'Mit sudo ausführen.'
-need openssl openssl
-need python3 python3
-need ip iproute2
-need ss iproute2
-
-input="$(ask 'HTTPS-Link oder Domain: ')"
-[ -n "$input" ] || fail 'Keine Eingabe.'
-case "$input" in http://*) fail 'Der Link muss HTTPS verwenden.';; https://*) url="$input";; *) url="https://$input";; esac
-
-parsed="$(python3 - "$url" <<'PY'
-import sys
-from urllib.parse import urlsplit
-u=urlsplit(sys.argv[1])
-if u.scheme != 'https' or not u.hostname:
-    raise SystemExit(1)
-print(u.hostname)
-print(u.port or 443)
-PY
-)" || fail 'Link oder Domain ungültig.'
-host="$(printf '%s\n' "$parsed" | sed -n '1p')"
-tls_port="$(printf '%s\n' "$parsed" | sed -n '2p')"
-
-case "$host" in *[!A-Za-z0-9._:-]*|'') fail 'Domain enthält ungültige Zeichen.';; esac
-case "$tls_port" in *[!0-9]*|'') fail 'Port ungültig.';; esac
-
-connect_host="$host"
-if getent ahostsv4 "$host" >/dev/null 2>&1; then
-    while IFS= read -r candidate; do
-        case "$candidate" in 127.*|10.*|192.168.*|172.1[6-9].*|172.2[0-9].*|172.3[01].*) connect_host="$candidate"; break;; esac
-    done <<EOF
-$(getent ahostsv4 "$host" | awk '{print $1}' | sort -u)
-EOF
-fi
-
-work="$(mktemp -d /tmp/get-cert.XXXXXX)"
-cleanup(){ rm -rf "$work"; }
+CA_FILE="/var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt"
+SITE_FILE="/etc/caddy/sites/csv-reporting.caddy"
+TMP=""
+PID=""
+cleanup(){ [ -z "$PID" ] || kill "$PID" 2>/dev/null || true; [ -z "$TMP" ] || rm -rf "$TMP"; }
 trap cleanup EXIT HUP INT TERM
+ask(){ printf '%s [%s]: ' "$1" "$2" >/dev/tty; IFS= read -r value </dev/tty || value=""; [ -n "$value" ] && printf '%s' "$value" || printf '%s' "$2"; }
+listen(){ ss -H -ltn "sport = :$1" 2>/dev/null | grep -q .; }
+free_port(){ port="$1"; while listen "$port"; do port=$((port+1)); [ "$port" -le 65535 ] || exit 1; done; printf '%s' "$port"; }
+lan_ip(){ ip -4 route get 1.1.1.1 2>/dev/null | sed -n 's/.* src \([^ ]*\).*/\1/p' | head -n1; }
+default_target(){
+ if [ -r "$SITE_FILE" ]; then
+  sed -n 's/^[[:space:]]*https:\/\/\([^ {]*\).*/https:\/\/\1/p' "$SITE_FILE" | head -n1
+ fi
+}
 
-printf 'Zertifikat abrufen: %s:%s (SNI: %s)\n' "$connect_host" "$tls_port" "$host"
-openssl s_client -connect "$connect_host:$tls_port" -servername "$host" -showcerts </dev/null 2>"$work/openssl.log" |
-awk '
-/-----BEGIN CERTIFICATE-----/{n++; out=sprintf("cert-%02d.pem",n); writing=1}
-writing{print > (dir "/" out)}
-/-----END CERTIFICATE-----/{writing=0}
-' dir="$work" || true
+[ "$(id -u)" -eq 0 ] || { printf 'Mit sudo ausführen.\n' >&2; exit 1; }
+[ -r "$CA_FILE" ] || { printf 'Caddy-CA nicht gefunden: %s\n' "$CA_FILE" >&2; exit 1; }
+command -v openssl >/dev/null 2>&1 || { printf 'openssl fehlt.\n' >&2; exit 1; }
+command -v python3 >/dev/null 2>&1 || { printf 'python3 fehlt.\n' >&2; exit 1; }
 
-[ -s "$work/cert-01.pem" ] || { cat "$work/openssl.log" >&2; fail 'Kein Zertifikat vom lokalen HTTPS-Dienst erhalten.'; }
+DEFAULT="$(default_target)"
+[ -n "$DEFAULT" ] || DEFAULT="https://$(lan_ip):8443"
+printf 'CSV Reporting Zertifikat-Download\n\n'
+TARGET="$(ask "HTTPS-Adresse der Anwendung" "$DEFAULT")"
+case "$TARGET" in https://*) ;; *) TARGET="https://$TARGET";; esac
 
-cp "$work/cert-01.pem" "$work/server-certificate.pem"
-: >"$work/certificate-chain.pem"
-i=1
-while [ -s "$(printf "$work/cert-%02d.pem" "$i")" ]; do
-    cat "$(printf "$work/cert-%02d.pem" "$i")" >>"$work/certificate-chain.pem"
-    i=$((i+1))
-done
+AUTHORITY="${TARGET#https://}"; AUTHORITY="${AUTHORITY%%/*}"
+case "$AUTHORITY" in
+ \[*\]:*) HOST="${AUTHORITY%%]*}"; HOST="${HOST#[}"; PORT="${AUTHORITY##*:}";;
+ \[*\]) HOST="${AUTHORITY#[}"; HOST="${HOST%]}"; PORT=443;;
+ *:*) HOST="${AUTHORITY%:*}"; PORT="${AUTHORITY##*:}";;
+ *) HOST="$AUTHORITY"; PORT=443;;
+esac
+[ -n "$HOST" ] || { printf 'Adresse ungültig.\n' >&2; exit 1; }
+case "$PORT" in ''|*[!0-9]*) printf 'Port ungültig.\n' >&2; exit 1;; esac
 
-openssl x509 -in "$work/server-certificate.pem" -outform DER 2>/dev/null | openssl dgst -sha256 -r | awk '{print $1}' >"$work/fingerprint"
-subject="$(openssl x509 -in "$work/server-certificate.pem" -noout -subject 2>/dev/null | sed 's/^subject=//')"
-issuer="$(openssl x509 -in "$work/server-certificate.pem" -noout -issuer 2>/dev/null | sed 's/^issuer=//')"
-expiry="$(openssl x509 -in "$work/server-certificate.pem" -noout -enddate 2>/dev/null | sed 's/^notAfter=//')"
+TMP="$(mktemp -d)"
+cp "$CA_FILE" "$TMP/csv-reporting-ca.crt"
+chmod 0644 "$TMP/csv-reporting-ca.crt"
 
-found=''
-for root in /etc/letsencrypt/live /etc/nginx /etc/apache2 /etc/ssl /usr/local/share/ca-certificates /var/lib/caddy/.local/share/caddy; do
-    [ -d "$root" ] || continue
-    for file in $(find "$root" -type f \( -name '*.pem' -o -name '*.crt' -o -name '*.cer' \) 2>/dev/null); do
-        local_fp="$(openssl x509 -in "$file" -outform DER 2>/dev/null | openssl dgst -sha256 -r 2>/dev/null | awk '{print $1}')"
-        if [ -n "$local_fp" ] && [ "$local_fp" = "$(cat "$work/fingerprint")" ]; then found="$file"; break 2; fi
-    done
-done
+if ! openssl s_client -connect "$HOST:$PORT" -servername "$HOST" -showcerts </dev/null 2>"$TMP/tls-error" | openssl x509 -outform PEM >"$TMP/csv-reporting-server.crt" 2>/dev/null; then
+ printf 'Serverzertifikat konnte nicht von %s:%s gelesen werden.\n' "$HOST" "$PORT" >&2
+ cat "$TMP/tls-error" >&2
+ exit 1
+fi
+chmod 0644 "$TMP/csv-reporting-server.crt"
 
-cat >"$work/README.txt" <<EOF
-CSV Reporting certificate export
+SUBJECT="$(openssl x509 -in "$TMP/csv-reporting-server.crt" -noout -subject | sed 's/^subject=//')"
+ISSUER="$(openssl x509 -in "$TMP/csv-reporting-server.crt" -noout -issuer | sed 's/^issuer=//')"
+SAN="$(openssl x509 -in "$TMP/csv-reporting-server.crt" -noout -ext subjectAltName 2>/dev/null | tail -n +2 | tr -d '\n' | sed 's/^[[:space:]]*//')"
+FINGERPRINT="$(openssl x509 -in "$TMP/csv-reporting-ca.crt" -noout -fingerprint -sha256 | cut -d= -f2-)"
 
-Domain: $host
-TLS port: $tls_port
-Subject: $subject
-Issuer: $issuer
-Expires: $expiry
-SHA-256: $(cat "$work/fingerprint")
-Local certificate: ${found:-not found as a separate file}
-
-Files:
-- server-certificate.pem: certificate presented for the domain
-- certificate-chain.pem: complete chain presented by the HTTPS service
-
-No private key is included.
+cat >"$TMP/index.html" <<EOF
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CSV Reporting Zertifikate</title><style>body{font:16px Arial,sans-serif;max-width:760px;margin:40px auto;padding:0 18px;line-height:1.45}a{display:block;margin:12px 0;padding:12px;border:1px solid #ccc;border-radius:5px}code{overflow-wrap:anywhere}</style></head><body><h1>CSV Reporting Zertifikate</h1><p>Ziel: <code>$TARGET</code></p><a href="csv-reporting-ca.crt" download>CA-Zertifikat herunterladen und als vertrauenswürdige Stammzertifizierungsstelle installieren</a><a href="csv-reporting-server.crt" download>Serverzertifikat herunterladen, nur zur Prüfung</a><p>Nach dem Import des CA-Zertifikats den Browser vollständig neu starten.</p></body></html>
 EOF
 
-ip="$(local_ip)"
-[ -n "$ip" ] || fail 'Keine lokale IPv4-Adresse erkannt.'
-port="$(free_port)"
-token="$(openssl rand -hex 18)"
-serve="$work/share/$token"
-mkdir -p "$serve"
-cp "$work/server-certificate.pem" "$work/certificate-chain.pem" "$work/README.txt" "$serve/"
+IP="$(lan_ip)"; [ -n "$IP" ] || { printf 'Keine LAN-IP erkannt.\n' >&2; exit 1; }
+DOWNLOAD_PORT="$(free_port 8099)"
 
-printf '\nGefunden\nDomain: %s\nBetreff: %s\nAussteller: %s\nAblauf: %s\n' "$host" "$subject" "$issuer" "$expiry"
-[ -n "$found" ] && printf 'Lokale Datei: %s\n' "$found" || printf 'Lokale Datei: nicht eindeutig gefunden; Zertifikat wurde direkt vom lokalen HTTPS-Dienst gelesen.\n'
-printf '\nDownload: http://%s:%s/%s/\n' "$ip" "$port" "$token"
-printf 'Enthalten: Serverzertifikat, Zertifikatskette, Informationen\n'
-printf 'Kein privater Schlüssel. Ende automatisch nach 10 Minuten oder Strg+C.\n\n'
+printf '\nGeprüfte HTTPS-Adresse: %s\n' "$TARGET"
+printf 'Serverzertifikat:\n  Subject: %s\n  Issuer:  %s\n  SAN:     %s\n' "$SUBJECT" "$ISSUER" "$SAN"
+printf '\nZu installieren ist die ausstellende CA, nicht das wechselnde Serverzertifikat.\n'
+printf 'CA SHA-256: %s\n' "$FINGERPRINT"
+printf '\nTemporärer Downloadserver:\n  http://%s:%s/\n' "$IP" "$DOWNLOAD_PORT"
+printf 'Direkt: http://%s:%s/csv-reporting-ca.crt\n' "$IP" "$DOWNLOAD_PORT"
+printf '\nNur im lokalen Netz erreichbar. Beenden mit Enter oder Strg+C.\n'
 
-cd "$work/share"
-exec python3 - "$ip" "$port" <<'PY'
-import http.server, socketserver, sys, threading
-host=sys.argv[1]
-port=int(sys.argv[2])
-class Handler(http.server.SimpleHTTPRequestHandler):
-    def log_message(self, fmt, *args):
-        print('Download:', args[0])
-class Server(socketserver.TCPServer):
-    allow_reuse_address=True
-with Server((host,port),Handler) as server:
-    timer=threading.Timer(600,server.shutdown)
-    timer.daemon=True
-    timer.start()
-    try:
-        server.serve_forever()
-    except KeyboardInterrupt:
-        pass
-    finally:
-        timer.cancel()
-PY
+cd "$TMP"
+python3 -m http.server "$DOWNLOAD_PORT" --bind "$IP" >/dev/null 2>&1 &
+PID=$!
+sleep 1
+kill -0 "$PID" 2>/dev/null || { printf 'Downloadserver konnte nicht gestartet werden.\n' >&2; exit 1; }
+IFS= read -r _ </dev/tty || true
