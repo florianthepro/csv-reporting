@@ -80,6 +80,8 @@ repository(){
   tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT HUP INT TERM
   git clone --branch "$PROJECT_BRANCH" --depth 1 "$PROJECT_REPOSITORY" "$tmp/repository"
   [ -f "$tmp/repository/backend.py" ] || fail "backend.py fehlt."
+  [ -f "$tmp/repository/index.svg" ] || fail "index.svg fehlt im Repository-Root."
+  [ -f "$tmp/repository/edit.svg" ] || fail "edit.svg fehlt im Repository-Root."
   if [ -n "$(find "$APP_DIRECTORY" -mindepth 1 -maxdepth 1 -print -quit)" ]; then backup="$STATE_DIRECTORY/app-backup-$(date +%Y%m%d-%H%M%S)"; mkdir -p "$backup"; cp -a "$APP_DIRECTORY/." "$backup/"; log "Sicherung: $backup"; fi
   find "$APP_DIRECTORY" -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
   cp -a "$tmp/repository/." "$APP_DIRECTORY/"; rm -rf "$APP_DIRECTORY/.git"
@@ -168,10 +170,28 @@ $SITE_ADDRESS {
 $TLS_LINE
     encode zstd gzip
     handle_path ${PROJECT_URL_PATH%/}/* {
-        handle $DJANGO_API_PREFIX/* { reverse_proxy unix//$SOCKET_PATH }
-        handle { root * $APP_DIRECTORY/$FRONTEND_DIRECTORY; try_files {path} /$FRONTEND_FALLBACK_FILE; file_server }
+        handle $DJANGO_API_PREFIX/* {
+            reverse_proxy unix//$SOCKET_PATH
+        }
+        handle /index.svg {
+            root * $APP_DIRECTORY
+            file_server
+        }
+        handle /edit.svg {
+            root * $APP_DIRECTORY
+            file_server
+        }
+        handle {
+            root * $APP_DIRECTORY/$FRONTEND_DIRECTORY
+            try_files {path} /$FRONTEND_FALLBACK_FILE
+            file_server
+        }
     }
-    header { X-Content-Type-Options "nosniff"; Referrer-Policy "strict-origin-when-cross-origin"; -Server }
+    header {
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        -Server
+    }
 }
 EOF
   cp "$CADDY_SITE_FILE" "$LOCAL_CADDY_DIRECTORY/Caddyfile"

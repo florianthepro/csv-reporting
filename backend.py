@@ -26,7 +26,9 @@ def install_package(value: str) -> None:
 def load_ftpkit(allow_install: bool = False):
     if importlib.util.find_spec("ftpkit") is None:
         if not allow_install:
-            raise RuntimeError("ftpkit fehlt. Zuerst `python backend.py install` ausführen.")
+            raise RuntimeError(
+                "ftpkit fehlt. Zuerst `python backend.py install` ausführen."
+            )
         install_package(FTPKIT_SOURCE)
         importlib.invalidate_caches()
     return importlib.import_module("ftpkit")
@@ -63,7 +65,11 @@ if not settings.configured:
     settings.configure(
         DEBUG=os.getenv("DJANGO_DEBUG", "false").lower() == "true",
         SECRET_KEY=os.environ["DJANGO_SECRET_KEY"],
-        ALLOWED_HOSTS=[v.strip() for v in os.getenv("DJANGO_ALLOWED_HOSTS", "localhost").split(",") if v.strip()],
+        ALLOWED_HOSTS=[
+            v.strip()
+            for v in os.getenv("DJANGO_ALLOWED_HOSTS", "localhost").split(",")
+            if v.strip()
+        ],
         ROOT_URLCONF=__name__,
         INSTALLED_APPS=["django.contrib.contenttypes"],
         MIDDLEWARE=[
@@ -88,6 +94,7 @@ if not settings.configured:
     )
 
 import django
+
 django.setup()
 
 from django.core.management import call_command
@@ -154,7 +161,10 @@ def fetch_remote() -> str:
             REMOTE_URL,
             data=body,
             method=method,
-            headers={"Accept": "text/csv, application/csv, text/plain;q=0.9, */*;q=0.1", "User-Agent": "CSV-Reporting/3.0"},
+            headers={
+                "Accept": "text/csv, application/csv, text/plain;q=0.9, */*;q=0.1",
+                "User-Agent": "CSV-Reporting/3.0",
+            },
         )
         try:
             with urllib.request.urlopen(request, timeout=60) as response:
@@ -184,11 +194,15 @@ def load_config() -> dict:
 def save_config(value: dict) -> None:
     STATE_DIRECTORY.mkdir(parents=True, exist_ok=True)
     temporary = CONFIG_FILE.with_suffix(".tmp")
-    temporary.write_text(json.dumps(value, ensure_ascii=False, indent=2), encoding="utf-8")
+    temporary.write_text(
+        json.dumps(value, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     temporary.replace(CONFIG_FILE)
 
 
-def apply_download_filters(header: list[str], rows: list[dict], config: dict) -> list[dict]:
+def apply_download_filters(
+    header: list[str], rows: list[dict], config: dict
+) -> list[dict]:
     filters = config.get("download_filters", {})
     if not isinstance(filters, dict):
         return rows
@@ -198,12 +212,21 @@ def apply_download_filters(header: list[str], rows: list[dict], config: dict) ->
         actual = normalized.get(str(column).strip().casefold())
         if actual:
             rules.append((actual, {str(v).strip().casefold() for v in blocked}))
-    return [row for row in rows if not any(str(row.get(column, "")).strip().casefold() in blocked for column, blocked in rules)]
+    return [
+        row
+        for row in rows
+        if not any(
+            str(row.get(column, "")).strip().casefold() in blocked
+            for column, blocked in rules
+        )
+    ]
 
 
 def timestamp_minutes(value: str):
     try:
-        parsed = datetime.strptime(value.strip(), "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+        parsed = datetime.strptime(value.strip(), "%Y-%m-%d %H:%M:%S").replace(
+            tzinfo=timezone.utc
+        )
     except ValueError:
         return None
     return round((parsed - datetime.now(timezone.utc)).total_seconds() / 60, 2)
@@ -216,12 +239,21 @@ def match_pattern(value: str, pattern: str) -> bool:
     if minutes is not None:
         for operator in (">=", "<=", ">", "<"):
             if pattern.startswith(operator):
-                try: target = float(pattern[len(operator):])
-                except ValueError: return False
-                return {">=": minutes >= target, "<=": minutes <= target, ">": minutes > target, "<": minutes < target}[operator]
+                try:
+                    target = float(pattern[len(operator) :])
+                except ValueError:
+                    return False
+                return {
+                    ">=": minutes >= target,
+                    "<=": minutes <= target,
+                    ">": minutes > target,
+                    "<": minutes < target,
+                }[operator]
         if ".." in pattern:
-            try: low, high = map(float, pattern.split("..", 1))
-            except ValueError: return False
+            try:
+                low, high = map(float, pattern.split("..", 1))
+            except ValueError:
+                return False
             return low <= minutes <= high
     if pattern.casefold() in {"n/a", "na"}:
         return value.strip() == "" or value.strip().casefold() in {"n/a", "na"}
@@ -271,11 +303,23 @@ def data_view(request):
         visible = [name for name in visible if name in header]
         result = []
         for row in rows:
-            matched = [rule for rule in config.get("rules", []) if rule_matches(row, rule)]
+            matched = [
+                rule for rule in config.get("rules", []) if rule_matches(row, rule)
+            ]
             if mode in {"index", "map"} and config.get("rules") and not matched:
                 continue
-            result.append({"values": {key: row.get(key, "") for key in visible}, "rules": matched})
-        return JsonResponse({"header": visible, "rows": result, "delimiter": delimiter, "view": mode})
+            result.append(
+                {"values": {key: row.get(key, "") for key in visible}, "rules": matched}
+            )
+        return JsonResponse(
+            {
+                "all_header": header,
+                "header": visible,
+                "rows": result,
+                "delimiter": delimiter,
+                "view": mode,
+            }
+        )
     except (OSError, ValueError) as exc:
         return JsonResponse({"error": str(exc)}, status=502)
 
@@ -292,7 +336,9 @@ def config_view(request):
     except json.JSONDecodeError:
         return JsonResponse({"error": "Ungültiges JSON."}, status=400)
     if not isinstance(value, dict):
-        return JsonResponse({"error": "Konfiguration muss ein Objekt sein."}, status=400)
+        return JsonResponse(
+            {"error": "Konfiguration muss ein Objekt sein."}, status=400
+        )
     save_config(value)
     return JsonResponse({"saved": True})
 

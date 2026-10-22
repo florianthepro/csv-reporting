@@ -1,18 +1,6 @@
 # CSV Reporting
 
-Webanwendung zur Darstellung, Filterung und regelbasierten Verarbeitung einer entfernten CSV-Datenquelle. Die bisherige einzelne PHP-Datei wurde sauber in statisches Frontend, Django-Backend und Server-Setup getrennt.
-
-## Funktionen
-
-- CSV-Abruf zuerst per POST (`downloadBtn=1`), danach als GET-Fallback
-- Erkennung von Komma, Semikolon und Tabulator
-- Prüfung auf gültige, konsistente CSV-Daten
-- konfigurierbare Ausschlussfilter beim Abruf
-- Ergebnis-, Regel- und Rohdatenansicht
-- Spaltenauswahl und Umbenennungen über JSON-Konfiguration
-- Wildcard-, Negations- und Zeitwertregeln
-- optionaler Konfigurationseditor
-- keine Benutzerkonten
+CSV Reporting lädt CSV-Daten per HTTP(S), validiert und filtert die Daten und stellt sie als Ergebnis-, Karten-, Rohdaten- und Regelansicht bereit. Die frühere Ein-Datei-PHP-Anwendung ist vollständig in ein statisches Frontend, ein Django-Backend und ein reproduzierbares Server-Setup getrennt.
 
 ## Installation
 
@@ -20,9 +8,44 @@ Webanwendung zur Darstellung, Filterung und regelbasierten Verarbeitung einer en
 curl -fsSL https://raw.githubusercontent.com/florianthepro/csv-reporting/main/setup.sh | sudo bash
 ```
 
-Das Setup fragt nach Domain, HTTP/HTTPS, CSV-Quell-URL und danach, ob der Konfigurationseditor aktiviert werden soll.
+Die Dateien `index.svg` und `edit.svg` müssen im Root des `main`-Branches liegen. `index.svg` ist das Standardsymbol der Anwendung; `edit.svg` wird in der Regelansicht verwendet. Das Setup prüft beide Dateien und Caddy liefert sie unterhalb des Projektpfads aus.
 
-## Struktur
+Das Setup fragt nach:
+
+- Domain oder IP
+- automatischem HTTPS, eigenem Zertifikat oder HTTP
+- CSV-Quell-URL
+- Aktivierung des Regel-Editors
+
+## Funktionen
+
+- CSV-Abruf über POST mit `downloadBtn=1`
+- automatischer GET-Fallback
+- Begrenzung der maximalen Downloadgröße
+- Erkennung von Komma, Semikolon und Tabulator
+- Prüfung auf leere, ungültige oder inkonsistente CSV-Daten
+- konfigurierbare Ausschlussfilter direkt nach dem Abruf
+- Ergebnisansicht mit regelbasiert ausgewählten Zeilen
+- Kartenansicht für regelbasierte Treffer
+- Rohdatenansicht ohne Regelbegrenzung
+- Filter pro sichtbarer Spalte
+- Spalten ein- und ausblenden
+- Spalten umbenennen
+- generische Links mit `*` als Platzhalter
+- Wildcards `*` und `?`
+- Negation von Bedingungen
+- Zeitbedingungen `>`, `>=`, `<`, `<=`, Bereiche und exakte Werte
+- mehrere UND-Bedingungen pro Regel
+- Regeln aktivieren, deaktivieren, bearbeiten und löschen
+- Drag-and-drop-Reihenfolge
+- Infotext pro Regel
+- JSON-Import und -Export
+- CSV-Rohdatenexport
+- manueller und API-basierter CSV-Refresh
+- heller und dunkler Systemmodus
+- keine Benutzerkonten und keine Registrierung
+
+## Repository-Struktur
 
 ```text
 csv-reporting/
@@ -30,6 +53,8 @@ csv-reporting/
 ├── structure.md
 ├── setup.sh
 ├── backend.py
+├── index.svg
+├── edit.svg
 └── frontend/
     ├── index.html
     ├── style.css
@@ -52,19 +77,25 @@ sudo -u csv-reporting sh -c 'set -a; . /etc/csv-reporting/environment; set +a; /
 
 ## Konfiguration
 
-Geschützte Serverwerte liegen in:
+Geschützte Produktionswerte:
 
 ```text
 /etc/csv-reporting/environment
 ```
 
-Regeln, Spalten und Downloadfilter liegen in:
+Regeln und Anzeigeeinstellungen:
 
 ```text
 /var/lib/csv-reporting/state/csv-reporting.json
 ```
 
-Beispiel:
+Letzte gültige CSV:
+
+```text
+/var/lib/csv-reporting/state/latest.csv
+```
+
+Beispielkonfiguration:
 
 ```json
 {
@@ -72,20 +103,24 @@ Beispiel:
   "column_renames": {"Zeit": "Verbleibend"},
   "rules": [
     {
-      "description": "Offene Einträge über 30 Minuten",
+      "description": "Status = open & Zeit > 30",
+      "info": "Offene Einträge über 30 Minuten",
       "conditions": [
         {"column": "Status", "pattern": "open", "negate": false},
         {"column": "Zeit", "pattern": ">30", "negate": false}
       ]
     }
   ],
-  "enable_links": false,
-  "column_links": {},
-  "download_filters": {"row": ["line"]}
+  "enable_links": true,
+  "column_links": {
+    "ID": "*",
+    "Ticket": "https://example.invalid/ticket/*"
+  },
+  "download_filters": {
+    "row": ["line"]
+  }
 }
 ```
-
-Der Editor ist standardmäßig deaktiviert. Ohne separate Authentifizierung sollte der Editor nicht öffentlich aktiviert werden.
 
 ## API
 
@@ -100,14 +135,7 @@ PUT /api/config
 GET /api/raw
 ```
 
-## Daten
-
-```text
-/srv/webapps/csv-reporting/app/     Programmdateien
-/srv/webapps/csv-reporting/venv/    Python-Umgebung
-/var/lib/csv-reporting/state/       CSV-Cache und Regelkonfiguration
-/etc/csv-reporting/environment      geschützte Produktionswerte
-```
+`PUT /api/config` funktioniert nur, wenn der Editor bei der Installation aktiviert wurde. Da CSV Reporting bewusst keine Benutzerkonten besitzt, sollte Schreibzugriff nur in einem vertrauenswürdigen Netz oder hinter einer externen Zugriffskontrolle aktiviert werden.
 
 ## Lizenz
 

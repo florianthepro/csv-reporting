@@ -1,26 +1,75 @@
 # Struktur
 
-## Trennung des früheren Ein-Datei-Systems
+## Konzept
 
-Die frühere `index.php` enthielt Datenabruf, CSV-Parser, Regeln, Editor, HTML, CSS und JavaScript in einer Datei. Die neue Struktur trennt diese Verantwortlichkeiten:
+Die frühere `index.php` enthielt Remote-Abruf, CSV-Parser, Filter, Regeln, Editor, HTML, CSS und JavaScript. Die neue Implementierung trennt diese Bereiche, ohne Funktionen in das Setup zu verschieben.
 
 ```text
 setup.sh
-└── Debian, Verzeichnisse, PostgreSQL, systemd, Gunicorn und Caddy
+└── Installation und Betrieb
 
 backend.py
-├── ftpkit-Import
-├── CSV-Abruf und Validierung
-├── CSV-Cache
-├── Regelverarbeitung
+├── CSV-Abruf
+├── CSV-Validierung
+├── Filter und Regeln
 ├── Konfigurationsspeicherung
-└── JSON-/CSV-API
+├── Cache
+└── API
+
+index.svg und edit.svg
+└── Anwendungssymbole im Repository-Root
 
 frontend/
-├── index.html
-├── style.css
-└── app.js
+├── Darstellung
+├── Tabellenfilter
+├── Regel-Editor
+├── Import und Export
+└── Navigation
 ```
+
+## setup.sh
+
+`setup.sh` übernimmt ausschließlich Infrastruktur:
+
+- Debian prüfen
+- Python, Caddy, PostgreSQL und Git installieren
+- Projektbenutzer und Verzeichnisse anlegen
+- Repository installieren
+- Python-venv erstellen
+- `ftpkit`, Django, Gunicorn und psycopg installieren
+- PostgreSQL-Datenbank und Rolle anlegen
+- Geheimnisse in `/etc/csv-reporting/environment` speichern
+- Gunicorn als systemd-Dienst einrichten
+- Caddy-Site ergänzen
+- HTTP oder HTTPS konfigurieren
+- Health Check durchführen
+- vorhandenen Code vor dem Ersetzen sichern
+
+## backend.py
+
+`backend.py` enthält die Fachlogik:
+
+- `ftpkit` laden
+- Remote-CSV per POST und GET abrufen
+- Größe und Struktur validieren
+- Zeichensatz dekodieren
+- Delimiter erkennen
+- Downloadfilter anwenden
+- letzte gültige CSV cachen
+- Regelbedingungen auswerten
+- Zeitstempel in Minuten umrechnen
+- JSON-Konfiguration atomar speichern
+- JSON- und CSV-API bereitstellen
+
+`ftpkit` bleibt für projektübergreifende Hilfsfunktionen vorgesehen. CSV-Reporting-spezifische Regeln bleiben in diesem Repository.
+
+## Frontend
+
+Das Frontend arbeitet ohne Buildsystem und ohne externe JavaScript-Abhängigkeiten:
+
+- `index.html`: semantische Oberfläche und Verweise auf `index.svg`/`edit.svg`
+- `style.css`: responsives Hell-/Dunkel-Design
+- `app.js`: Ansichten, Filter, Links, Editor, Drag-and-drop sowie Import und Export
 
 ## Serverstruktur
 
@@ -44,47 +93,56 @@ frontend/
 
 ```text
 Browser
-→ Caddy
-  ├── /csv-reporting/* statisches Frontend
-  └── /csv-reporting/api/*
-      → Gunicorn-Socket
-        → Django backend.py
+→ Caddy auf Port 80/443
+  ├── statisches Frontend
+  └── /api/*
+      → Gunicorn-Unix-Socket
+        → Django in backend.py
           ├── Remote-CSV
-          ├── JSON-Konfiguration
+          ├── CSV-Cache
+          ├── Regelkonfiguration
           └── PostgreSQL-Grundlage
 ```
 
-## Bewusste Entscheidungen
-
-- Keine Benutzerkonten, weil die bisherige Anwendung keine Benutzerverwaltung benötigt.
-- Der Konfigurationseditor ist standardmäßig deaktiviert, weil Schreibzugriff ohne Authentifizierung öffentlich unsicher wäre.
-- CSV-Quelle und Geheimnisse stehen nicht im Repository.
-- Die CSV wird begrenzt heruntergeladen und vor Verwendung strukturell geprüft.
-- Die letzte gültige CSV wird außerhalb des Codes unter `/var/lib` gespeichert.
-- `ftpkit` bleibt für allgemeine Hilfsfunktionen vorgesehen; CSV-Reporting-Logik bleibt im Projekt.
-- PostgreSQL wird entsprechend dem gemeinsamen Plattformstandard eingerichtet, obwohl die CSV-Fachdaten weiter dateibasiert bleiben.
-
-## Übertragung der bisherigen Funktionen
+## Funktionsübertragung
 
 ```text
-remote_fetch             → fetch_remote
-Delimiter-Erkennung      → detect_delimiter
-CSV-Parser               → parse_csv
-Downloadfilter           → apply_download_filters
-Text-/Wildcard-Regeln    → match_pattern
-Zeitbedingungen          → timestamp_minutes + match_pattern
-Regelprüfung             → rule_matches
-JSON-Regeldatei          → csv-reporting.json
-index/map/raw/edit        → Frontendansichten + API
+csvreporting_remote_fetch      → fetch_remote
+csvreporting_detect_delimiter  → detect_delimiter
+csvreporting_parse_csv         → parse_csv
+csvreporting_dwlfilters        → download_filters
+parse_minutes_pattern          → match_pattern
+rule_matches                   → rule_matches
+csv-reporting.json             → CONFIG_FILE
+index/map/raw/edit             → Frontendansichten und API
+column_links                   → linkFor
+show_columns                   → Spalteneditor
+column_renames                 → Umbenennungseditor
+Regel aktiv/deaktiv            → stash_conditions
+Info pro Regel                 → info
+Drag-and-drop                  → HTML Drag and Drop in app.js
+Konfigurationsimport/-export   → Dateiaktionen im Frontend
 ```
 
-## Noch offen für eine vollständige Funktionsgleichheit
+## Sicherheitsgrenzen
 
-- visuelle Regelbearbeitung mit einzelnen Formularfeldern statt JSON-Textfeld
-- generische Spaltenlinks im Frontend
-- Drag-and-drop-Sortierung von Regeln
-- Info-Texte pro Regel
-- getrennte Kartenansicht mit eigener Darstellung
-- Import und Export der Konfiguration über Schaltflächen
+- keine Benutzerkonten
+- Editor standardmäßig deaktiviert
+- CSV-URL und Geheimnisse außerhalb des Repositorys
+- Download mit Größenlimit
+- nur HTTP(S)-Quellen
+- private Serverwerte mit Gruppenrechten `0640`
+- Dienst läuft als eigener Benutzer, nicht als root
+- Caddy greift nur auf statische Dateien und den Projektsocket zu
+- Konfigurationsdatei wird über eine temporäre Datei atomar ersetzt
 
-Diese Punkte sollten als normale Frontend-Funktionen umgesetzt werden und nicht wieder in eine einzelne Backend-Datei gemischt werden.
+
+## Symbole
+
+```text
+csv-reporting/
+├── index.svg   Standardsymbol für Ergebnis-, Karten- und Rohdatenansicht
+└── edit.svg    Symbol für die Regel- und Konfigurationsansicht
+```
+
+Die SVG-Dateien bleiben bewusst im Root des `main`-Branches. `setup.sh` bricht mit einer klaren Meldung ab, wenn eine der Dateien fehlt. Caddy liefert die Dateien im Projektpfad aus, obwohl das übrige Frontend aus `frontend/` bereitgestellt wird. Dadurch gibt es keine Kopien und nur jeweils eine maßgebliche Symboldatei.

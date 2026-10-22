@@ -1,1 +1,82 @@
+<!doctype html>
+<html lang="de">
 
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>CSV Reporting</title>
+  <link id="app-icon" rel="icon" type="image/svg+xml" href="index.svg">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <button id="menu-button" class="menu-button" type="button" aria-label="Menü öffnen">☰</button>
+  <aside id="menu" class="menu" hidden>
+    <button id="menu-close" type="button" aria-label="Menü schließen">×</button>
+    <nav>
+      <button type="button" data-view="index">Ergebnisse</button>
+      <button type="button" data-view="map">Karte</button>
+      <button type="button" data-view="raw">Rohdaten</button>
+      <button type="button" data-view="edit">Regeln</button>
+    </nav>
+  </aside>
+  <main>
+    <header>
+      <div>
+        <h1>CSV Reporting</h1>
+        <p id="status" aria-live="polite">Lade CSV …</p>
+      </div>
+      <button id="refresh" type="button">Aktualisieren</button>
+    </header>
+    <section id="report-view">
+      <details id="filters-panel">
+        <summary>Filter</summary>
+        <div id="filters" class="filters"></div>
+      </details>
+      <div class="table-wrap">
+        <table id="report">
+          <thead></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+    <section id="editor-view" hidden>
+      <div class="editor-actions">
+        <button id="add-rule" type="button">Regel hinzufügen</button>
+        <button id="export-config" type="button">Exportieren</button>
+        <label class="file-button">Importieren<input id="import-config" type="file"
+            accept="application/json,.json"></label>
+        <button id="save-config" type="button">Speichern</button>
+      </div>
+      <div id="editor-disabled" class="warning" hidden>Der Editor ist serverseitig deaktiviert.</div>
+      <details open>
+        <summary>Spalten</summary>
+        <div id="columns-editor"></div>
+      </details>
+      <details open>
+        <summary>Generische Links</summary><label><input id="links-enabled" type="checkbox"> aktiv</label>
+        <div id="links-editor"></div>
+      </details>
+      <details open>
+        <summary>Downloadfilter</summary>
+        <div id="download-filters"></div>
+      </details>
+      <h2>Regeln</h2>
+      <div id="rules"></div>
+    </section>
+  </main>
+  <dialog id="rule-dialog">
+    <form method="dialog" id="rule-form">
+      <h2>Regel</h2>
+      <label>Info<textarea id="rule-info"></textarea></label>
+      <div id="conditions"></div>
+      <button id="add-condition" type="button">Bedingung hinzufügen</button>
+      <footer><button value="cancel">Abbrechen</button><button id="apply-rule" value="default">Übernehmen</button>
+      </footer>
+    </form>
+  </dialog>
+  <script src="app.js"></script>
+</body>
+
+</html>
