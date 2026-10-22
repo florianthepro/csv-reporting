@@ -61,3 +61,7 @@ Bei einer bestehenden Installation zeigt `setup.sh` nur noch:
 ## Version 14
 
 Finaler konsolidierter Stand auf Basis von Version 13. Enthalten sind die einzeiligen CSV-Header, die relative Spaltenbreite nach dem Durchschnitt der gesamten Spalte, der kompakte Editor, der reduzierte Regeldialog sowie die Installations- und Upgrade-Korrekturen der vorherigen Versionen.
+
+## Zertifikatsdownload
+
+`get-cert.sh` (separater Download) fragt die tatsächlich verwendete HTTPS-Adresse ab, liest das dazu ausgelieferte Serverzertifikat, zeigt Subject, Issuer und SAN an und startet anschließend einen temporären HTTP-Downloadserver im lokalen Netz. Installiert wird das Caddy-Root-CA-Zertifikat; das Serverzertifikat wird zusätzlich nur zur Kontrolle angeboten. Der Server endet mit Enter oder Strg+C.
