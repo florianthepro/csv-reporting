@@ -17,7 +17,7 @@ step(){ printf '[%s/10] %-18s %s\n' "$1" "$2" "$3"; }
 fail(){ printf '\nFehler: %s\nLog: %s\n' "$1" "$LOG" >&2; tail -n 15 "$LOG" 2>/dev/null >&2 || true; exit 1; }
 ask(){ printf '%s [%s]: ' "$1" "$2" >/dev/tty; IFS= read -r v </dev/tty || v=""; [ -n "$v" ] && printf '%s' "$v" || printf '%s' "$2"; }
 listens(){ ss -H -ltn "sport = :$1" 2>/dev/null | grep -q .; }
-process_on(){ ss -H -ltnp "sport = :$1" 2>/dev/null | sed -n '1s/.*users:/users:/p'; }
+process_on(){ ss -H -ltnp "sport = :$1" 2>/dev/null | grep -oE '\(\"[^\"]+' | head -n1 | tr -d '(\"' || true; }
 free_port(){ p="$1"; while listens "$p"; do p=$((p+1)); [ "$p" -le 65535 ] || fail "Kein freier Port gefunden."; done; printf '%s' "$p"; }
 lan_ip(){ ip -4 route get 1.1.1.1 2>/dev/null | sed -n 's/.* src \([^ ]*\).*/\1/p' | head -n1; }
 
@@ -33,8 +33,9 @@ init(){
 
 questions(){
  if listens 80 || listens 443; then
-  printf '\nWebserver belegt\n80:  %s\n443: %s\n' "$(process_on 80)" "$(process_on 443)"
-  printf '[1] Behalten, separater LAN-Port\n[2] Apache stoppen, Caddy auf 80/443\n[Q] Beenden\n'
+  P80="$(process_on 80)"; P443="$(process_on 443)"; [ -n "$P80" ] || P80=belegt; [ -n "$P443" ] || P443=belegt
+  printf '\nWebserver belegt\n80:  %s\n443: %s\n' "$P80" "$P443"
+  printf '[1] Behalten, separater LAN-Port\n[2] Belegenden Webserver stoppen, Caddy auf 80/443\n[Q] Beenden\n'
   MODE="$(ask "Auswahl" "1")"
  else MODE=2; fi
  case "$MODE" in
@@ -52,7 +53,9 @@ questions(){
    ADDRESS="$SCHEME://$IP:$PORT"; BIND_LINE="    bind $IP"; ALLOWED="$IP,localhost,127.0.0.1"; HTTPS=$([ "$SCHEME" = https ] && echo true || echo false); DISABLE_REDIRECTS=true
    ;;
   2)
-   if systemctl is-active --quiet apache2 2>/dev/null; then systemctl disable --now apache2 >>"$LOG" 2>&1 || fail "Apache konnte nicht gestoppt werden."; fi
+   for SERVICE in apache2 nginx lighttpd; do if systemctl is-active --quiet "$SERVICE" 2>/dev/null; then systemctl disable --now "$SERVICE" >>"$LOG" 2>&1 || fail "$SERVICE konnte nicht gestoppt werden."; fi; done
+   listens 80 && fail "Port 80 bleibt durch einen unbekannten Dienst belegt."
+   listens 443 && fail "Port 443 bleibt durch einen unbekannten Dienst belegt."
    printf '[1] HTTPS automatisch\n[2] HTTPS mit Zertifikat\n[3] HTTP\n'
    TLS_MODE="$(ask "Verbindung" "1")"; IP="$(ask "Domain oder IP" "localhost")"; BIND_LINE=''; ALLOWED="$IP,localhost,127.0.0.1"; DISABLE_REDIRECTS=false
    case "$TLS_MODE" in
@@ -75,7 +78,7 @@ directories(){
  id "$USER" >/dev/null 2>&1 || useradd --system --user-group --home-dir "$PROJECT_ROOT" --create-home --shell /usr/sbin/nologin "$USER"
  install -d -o root -g "$USER" -m 0750 "$PROJECT_ROOT" "$APP" "$VENV" "$PROJECT_ROOT/caddy"
  install -d -o "$USER" -g "$USER" -m 0750 "$DATA" "$STATE"
- install -d -o root -g "$USER" -m 0750 "$(dirname "$ENV")"; install -d -m 0755 "$SITES"; usermod -aG "$USER" caddy
+ install -d -o root -g "$USER" -m 0750 "$(dirname "$ENV")"; install -d -o root -g root -m 0755 /etc/caddy "$SITES"; usermod -aG "$USER" caddy
  step 2 Verzeichnisse OK
 }
 
@@ -177,6 +180,9 @@ $TLS_LINE
 EOF
  cp "$TMP" "$SITE.new"; rm -f "$TMP"
  [ -f "$MASTER" ] || : >"$MASTER"
+ chown root:root "$MASTER"
+ chmod 0644 "$MASTER"
+ find "$SITES" -maxdepth 1 -type f -name '*.caddy' -exec chown root:root {} + -exec chmod 0644 {} +
  cp "$MASTER" "$MASTER.before-$PROJECT_PATH"
  if [ "$DISABLE_REDIRECTS" = true ]; then
   awk 'BEGIN{skip=0} /^\{/{skip=1} skip && /^\}/{skip=0;next} !skip{print}' "$MASTER.before-$PROJECT_PATH" >"$MASTER.body"
@@ -186,8 +192,12 @@ EOF
  grep -Fq 'import sites/*.caddy' "$MASTER" || printf '\nimport sites/*.caddy\n' >>"$MASTER"
  [ ! -f "$SITE" ] || cp "$SITE" "$SITE.before"
  mv "$SITE.new" "$SITE"
+ chown root:root "$SITE"
+ chmod 0644 "$SITE"
+ caddy fmt --overwrite "$MASTER" >>"$LOG" 2>&1 || true
+ caddy fmt --overwrite "$SITE" >>"$LOG" 2>&1 || true
  if ! caddy validate --config "$MASTER" >>"$LOG" 2>&1; then cp "$MASTER.before-$PROJECT_PATH" "$MASTER"; [ ! -f "$SITE.before" ] || mv "$SITE.before" "$SITE"; fail "Caddy-Konfiguration ungültig."; fi
- cp "$SITE" "$PROJECT_ROOT/caddy/Caddyfile"; systemctl enable caddy >>"$LOG" 2>&1; step 8 Webserver OK
+ cp "$SITE" "$PROJECT_ROOT/caddy/Caddyfile"; chown root:"$USER" "$PROJECT_ROOT/caddy/Caddyfile"; chmod 0640 "$PROJECT_ROOT/caddy/Caddyfile"; systemctl enable caddy >>"$LOG" 2>&1; step 8 Webserver OK
 }
 
 verify(){
