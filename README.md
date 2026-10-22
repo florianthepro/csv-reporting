@@ -38,3 +38,7 @@ Der Import akzeptiert `.json` und erkennt zusätzlich Metadaten aus einer alten 
 ## Version 10
 
 Tabellenspalten werden anhand der Überschrift und einer Stichprobe der ersten 120 Zeilen gewichtet. Sehr kurze Spalten bleiben schmal; lange Inhalte erhalten mehr Platz, ohne die Seite horizontal zu verbreitern. Editor, Regelliste und Regeldialog sind kompakter. Die Regelbeschreibung wird weiterhin automatisch erzeugt, aber nicht mehr als unnötiges Feld angezeigt.
+
+## Version 11
+
+CSV-Spaltenüberschriften bleiben immer einzeilig. Die Spaltenbreite wird aus der durchschnittlichen Inhaltslänge aller Zellen der jeweiligen Spalte berechnet und anschließend relativ zu den übrigen Spalten verteilt. Die Überschrift setzt zusätzlich eine Mindestbreite; überlange Überschriften werden einzeilig mit Auslassungspunkten dargestellt.
