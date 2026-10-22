@@ -8,7 +8,7 @@ CSV Reporting lädt CSV-Daten per HTTP(S), validiert und filtert die Daten und s
 curl -fsSL https://raw.githubusercontent.com/florianthepro/csv-reporting/main/setup.sh | sudo bash
 ```
 
-Die Dateien `index.svg` und `edit.svg` müssen im Root des `main`-Branches liegen. `index.svg` ist das Standardsymbol der Anwendung; `edit.svg` wird in der Regelansicht verwendet. Das Setup prüft beide Dateien und Caddy liefert sie unterhalb des Projektpfads aus.
+Die Dateien `index.svg` und `edit.svg` müssen im Ordner `frontend/` des `main`-Branches liegen. `index.svg` ist das Standardsymbol der Anwendung; `edit.svg` wird in der Regelansicht verwendet. Das Setup prüft beide Dateien und Caddy liefert sie unterhalb des Projektpfads aus.
 
 Das Setup fragt nach:
 
@@ -53,9 +53,9 @@ csv-reporting/
 ├── structure.md
 ├── setup.sh
 ├── backend.py
-├── index.svg
-├── edit.svg
 └── frontend/
+    ├── index.svg
+    ├── edit.svg
     ├── index.html
     ├── style.css
     └── app.js
@@ -140,3 +140,8 @@ GET /api/raw
 ## Lizenz
 
 MIT
+
+
+## ftpkit
+
+`ftpkit` ist optional, solange CSV Reporting keine Funktion daraus verwendet. Besitzt das `ftpkit`-Repository noch kein `pyproject.toml`, zeigt die Installation nur einen Hinweis und fährt fort. Sobald `ftpkit` als Python-Paket aufgebaut ist, installiert und importiert `backend.py` die Bibliothek automatisch.

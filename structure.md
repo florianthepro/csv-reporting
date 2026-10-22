@@ -16,8 +16,8 @@ backend.py
 ├── Cache
 └── API
 
-index.svg und edit.svg
-└── Anwendungssymbole im Repository-Root
+frontend/index.svg und frontend/edit.svg
+└── Anwendungssymbole im Frontend-Ordner
 
 frontend/
 ├── Darstellung
@@ -49,7 +49,7 @@ frontend/
 
 `backend.py` enthält die Fachlogik:
 
-- `ftpkit` laden
+- `ftpkit` optional laden; ein noch nicht paketiertes Repository blockiert die Installation nicht
 - Remote-CSV per POST und GET abrufen
 - Größe und Struktur validieren
 - Zeichensatz dekodieren
@@ -145,4 +145,4 @@ csv-reporting/
 └── edit.svg    Symbol für die Regel- und Konfigurationsansicht
 ```
 
-Die SVG-Dateien bleiben bewusst im Root des `main`-Branches. `setup.sh` bricht mit einer klaren Meldung ab, wenn eine der Dateien fehlt. Caddy liefert die Dateien im Projektpfad aus, obwohl das übrige Frontend aus `frontend/` bereitgestellt wird. Dadurch gibt es keine Kopien und nur jeweils eine maßgebliche Symboldatei.
+Die SVG-Dateien bleiben bewusst im Ordner `frontend/` des `main`-Branches. `setup.sh` bricht mit einer klaren Meldung ab, wenn eine der Dateien fehlt. Caddy liefert die Dateien im Projektpfad aus, obwohl das übrige Frontend aus `frontend/` bereitgestellt wird. Dadurch gibt es keine Kopien und nur jeweils eine maßgebliche Symboldatei.
