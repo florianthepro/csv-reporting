@@ -42,3 +42,7 @@ Tabellenspalten werden anhand der Überschrift und einer Stichprobe der ersten 1
 ## Version 11
 
 CSV-Spaltenüberschriften bleiben immer einzeilig. Die Spaltenbreite wird aus der durchschnittlichen Inhaltslänge aller Zellen der jeweiligen Spalte berechnet und anschließend relativ zu den übrigen Spalten verteilt. Die Überschrift setzt zusätzlich eine Mindestbreite; überlange Überschriften werden einzeilig mit Auslassungspunkten dargestellt.
+
+## Version 12
+
+Der Editor besitzt drei klare Bereiche: Allgemein, Spalten & Links und Regeln. Downloadfilter stehen kompakt unter Seitentitel und Überschrift. Ein Filter kann aus einer aktiven CSV-Spalte und einem vorhandenen Wert gewählt oder manuell eingetragen werden. Spaltenanzeige, Anzeigename und Linkvorlage werden pro CSV-Spalte in einer gemeinsamen Zeile bearbeitet.
