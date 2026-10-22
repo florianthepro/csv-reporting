@@ -57,3 +57,7 @@ Bei einer bestehenden Installation zeigt `setup.sh` nur noch:
 `Update` übernimmt Environment, CSV-URL, Editorstatus, Regeln, Cache, PostgreSQL-Datenbank, Caddy-Site, IP, Port und TLS-Konfiguration unverändert. App und Python-Umgebung werden nach einer Vollsicherung frisch aufgebaut. Es gibt beim Update keine erneute Abfrage zu Hosting, Port, TLS oder CSV-Quelle.
 
 `Reset` sichert zuerst alles, löscht anschließend Konfiguration, Regeln, Cache und Datenbank und führt danach die vollständige interaktive Neueinrichtung aus. `Delete` sichert zuerst alles und entfernt danach Dienst, Projekt, Daten, Konfiguration, Caddy-Site und Datenbank.
+
+## Version 14
+
+Finaler konsolidierter Stand auf Basis von Version 13. Enthalten sind die einzeiligen CSV-Header, die relative Spaltenbreite nach dem Durchschnitt der gesamten Spalte, der kompakte Editor, der reduzierte Regeldialog sowie die Installations- und Upgrade-Korrekturen der vorherigen Versionen.
