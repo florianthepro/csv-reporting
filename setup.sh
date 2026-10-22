@@ -32,6 +32,18 @@ init(){
 }
 
 questions(){
+ EXISTING_ACTION=update
+ if [ -d "$PROJECT_ROOT" ] && [ "$(find "$PROJECT_ROOT" -mindepth 1 -maxdepth 1 -print -quit 2>/dev/null)" ]; then
+  printf '
+Projekt vorhanden: %s
+' "$PROJECT_ROOT"
+  printf '[1] Aktualisieren, App vorher sichern
+[2] Projektdateien und Python-Umgebung neu erstellen
+[Q] Beenden
+'
+  EXISTING_ACTION="$(ask "Auswahl" "1")"
+  case "$EXISTING_ACTION" in 1) EXISTING_ACTION=update;; 2) EXISTING_ACTION=rebuild;; q|Q) exit 0;; *) fail "Ungültige Auswahl.";; esac
+ fi
  if listens 80 || listens 443; then
   P80="$(process_on 80)"; P443="$(process_on 443)"; [ -n "$P80" ] || P80=belegt; [ -n "$P443" ] || P443=belegt
   printf '\nWebserver belegt\n80:  %s\n443: %s\n' "$P80" "$P443"

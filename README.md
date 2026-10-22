@@ -1,13 +1,6 @@
 # CSV Reporting
 
-CSV Reporting lädt eine entfernte CSV-Datei, filtert und visualisiert deren Inhalte und stellt einen optionalen Regel-Editor bereit.
-
-## Dateien
-
-- `setup.sh`: interaktive Installation für Debian/Ubuntu
-- `backend.py`: Django-/Gunicorn-Backend
-- `frontend/`: Browseroberfläche
-- `index.php`: Referenz und Importquelle des alten Systems
+CSV Reporting lädt eine entfernte CSV-Datei, zeigt die Ansichten `index`, `map` und `raw` und bietet optional einen Regel-Editor.
 
 ## Installation
 
@@ -15,15 +8,13 @@ CSV Reporting lädt eine entfernte CSV-Datei, filtert und visualisiert deren Inh
 curl -fsSL https://raw.githubusercontent.com/florianthepro/csv-reporting/main/setup.sh | sudo bash
 ```
 
-Vor der Installation müssen zusätzlich `frontend/index.svg` und `frontend/edit.svg` im Repository liegen.
+Bei einer vorhandenen Installation fragt das Setup, ob aktualisiert oder die Projektdateien samt Python-Umgebung neu erstellt werden sollen. Konfiguration, Statusdaten und PostgreSQL bleiben bei beiden Varianten erhalten.
 
 ## Seiten
 
-- `?` oder `?_page=index`
+- `?`
 - `?_page=map`
 - `?_page=raw`
 - `?_page=edit`
 
-## Konfiguration
-
-Die Editor-Konfiguration wird als JSON gespeichert. Alte JSON-Dateien aus `index.php` können importiert werden. Titel, Überschrift und Downloadfilter, die im alten System außerhalb der JSON-Datei standen, werden beim Import über einen Dialog ergänzt.
+Vor der Installation müssen `frontend/index.svg` und `frontend/edit.svg` im Repository vorhanden sein.
