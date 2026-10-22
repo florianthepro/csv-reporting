@@ -45,8 +45,10 @@ def normalize(v):
  for k in ('show_columns','rules'):
   if not isinstance(out.get(k),list):raise ValueError(f'{k} muss eine Liste sein.')
  for k in ('column_renames','column_links','download_filters'):
-  if not isinstance(out.get(k),dict):raise ValueError(f'{k} muss ein Objekt sein.')
+  if isinstance(out.get(k),list) and not out[k]:out[k]={}
+  if not isinstance(out.get(k),dict):raise ValueError(f'{k} muss ein Objekt oder eine leere Liste sein.')
  out['enable_links']=bool(out.get('enable_links'));out['title']=str(out.get('title') or DEFAULT['title']);out['heading']=str(out.get('heading') or DEFAULT['heading']);out['format']='csv-reporting';out['version']=2
+ for k in aliases:out.pop(k,None)
  out['download_filters']={str(k):[str(x) for x in (vals if isinstance(vals,list) else [vals])] for k,vals in out['download_filters'].items()}
  return out
 def config():
