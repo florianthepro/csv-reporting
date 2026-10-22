@@ -43,6 +43,17 @@ Tabellenspalten werden anhand der Überschrift und einer Stichprobe der ersten 1
 
 CSV-Spaltenüberschriften bleiben immer einzeilig. Die Spaltenbreite wird aus der durchschnittlichen Inhaltslänge aller Zellen der jeweiligen Spalte berechnet und anschließend relativ zu den übrigen Spalten verteilt. Die Überschrift setzt zusätzlich eine Mindestbreite; überlange Überschriften werden einzeilig mit Auslassungspunkten dargestellt.
 
-## Version 12
+## Version 13: Verwaltungsmenü
 
-Der Editor besitzt drei klare Bereiche: Allgemein, Spalten & Links und Regeln. Downloadfilter stehen kompakt unter Seitentitel und Überschrift. Ein Filter kann aus einer aktiven CSV-Spalte und einem vorhandenen Wert gewählt oder manuell eingetragen werden. Spaltenanzeige, Anzeigename und Linkvorlage werden pro CSV-Spalte in einer gemeinsamen Zeile bearbeitet.
+Bei einer bestehenden Installation zeigt `setup.sh` nur noch:
+
+```text
+[1] Update
+[2] Reset
+[3] Delete
+[Q] Beenden
+```
+
+`Update` übernimmt Environment, CSV-URL, Editorstatus, Regeln, Cache, PostgreSQL-Datenbank, Caddy-Site, IP, Port und TLS-Konfiguration unverändert. App und Python-Umgebung werden nach einer Vollsicherung frisch aufgebaut. Es gibt beim Update keine erneute Abfrage zu Hosting, Port, TLS oder CSV-Quelle.
+
+`Reset` sichert zuerst alles, löscht anschließend Konfiguration, Regeln, Cache und Datenbank und führt danach die vollständige interaktive Neueinrichtung aus. `Delete` sichert zuerst alles und entfernt danach Dienst, Projekt, Daten, Konfiguration, Caddy-Site und Datenbank.

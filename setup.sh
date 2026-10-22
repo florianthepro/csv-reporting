@@ -12,7 +12,7 @@ GUNICORN_VERSION="23.*"
 DEFAULT_HTTP_PORT="8080"
 DEFAULT_HTTPS_PORT="8443"
 LOG="/tmp/$PROJECT_PATH-setup.log"
-SETUP_VERSION="12"
+SETUP_VERSION="13"
 
 step(){ printf '[%s/10] %-18s %s\n' "$1" "$2" "$3"; }
 fail(){ printf '\nFehler: %s\nLog: %s\n' "$1" "$LOG" >&2; tail -n 15 "$LOG" 2>/dev/null >&2 || true; exit 1; }
@@ -40,21 +40,94 @@ init(){
  SOCK="/run/$PROJECT_PATH/$PROJECT_PATH.sock"; USER="$PROJECT_PATH"
 }
 
-questions(){
- printf 'CSV Reporting Setup v%s\n' "$SETUP_VERSION"
- EXISTING_ACTION=install
- if [ -d "$PROJECT_ROOT" ] && [ "$(find "$PROJECT_ROOT" -mindepth 1 -maxdepth 1 -print -quit 2>/dev/null)" ]; then
-  printf '
-Vorhandene Installation
-%s
-' "$PROJECT_ROOT"
-  printf '[1] Sicher aktualisieren: Vollsicherung, App und Python neu, Daten zurück
-[2] Neu aufbauen: Vollsicherung, App und Python neu, Daten zurück
+installed(){ [ -f "$ENV" ] || [ -f "$UNIT" ] || [ -d "$APP" ]; }
+confirm_word(){ printf '%s
+Zum Bestätigen %s eingeben: ' "$1" "$2" >/dev/tty; IFS= read -r answer </dev/tty || answer=""; [ "$answer" = "$2" ]; }
+main_menu(){
+ if ! installed; then ACTION=install; return; fi
+ printf '
+CSV Reporting
+[1] Update
+[2] Reset
+[3] Delete
 [Q] Beenden
 '
-  EXISTING_ACTION="$(ask "Auswahl" "1")"
-  case "$EXISTING_ACTION" in 1) EXISTING_ACTION=upgrade;; 2) EXISTING_ACTION=rebuild;; q|Q) exit 0;; *) fail "Ungültige Auswahl.";; esac
- fi
+ choice="$(ask "Auswahl" "1")"
+ case "$choice" in 1) ACTION=update;; 2) ACTION=reset;; 3) ACTION=delete;; q|Q) exit 0;; *) fail "Ungültige Auswahl.";; esac
+}
+backup_all(){
+ stamp="$(date +%Y%m%d-%H%M%S)"; BACKUP_ROOT="/var/backups/$PROJECT_PATH/$stamp"; install -d -m 0700 "$BACKUP_ROOT"
+ [ ! -d "$APP" ] || cp -a "$APP" "$BACKUP_ROOT/app"
+ [ ! -d "$VENV" ] || cp -a "$VENV" "$BACKUP_ROOT/venv"
+ [ ! -d "$STATE" ] || cp -a "$STATE" "$BACKUP_ROOT/state"
+ [ ! -f "$ENV" ] || cp -a "$ENV" "$BACKUP_ROOT/environment"
+ [ ! -f "$SITE" ] || cp -a "$SITE" "$BACKUP_ROOT/csv-reporting.caddy"
+ [ ! -f "$UNIT" ] || cp -a "$UNIT" "$BACKUP_ROOT/csv-reporting.service"
+ printf 'Sicherung: %s
+' "$BACKUP_ROOT"
+}
+load_existing(){
+ [ -r "$ENV" ] || fail "Bestehende Konfiguration fehlt: $ENV"
+ CSV_URL="$(sed -n 's/^CSV_REMOTE_URL=//p' "$ENV" | head -n1)"
+ EDITOR="$(sed -n 's/^CSV_EDITOR_ENABLED=//p' "$ENV" | head -n1)"
+ HTTPS="$(sed -n 's/^DJANGO_HTTPS=//p' "$ENV" | head -n1)"
+ ALLOWED="$(sed -n 's/^DJANGO_ALLOWED_HOSTS=//p' "$ENV" | head -n1)"
+ [ -n "$CSV_URL" ] || fail "CSV_REMOTE_URL fehlt."
+ [ -n "$EDITOR" ] || EDITOR=false
+}
+update_existing(){
+ printf '
+Update
+Konfiguration, Regeln, Statusdaten, Datenbank und Webadresse bleiben unverändert.
+'
+ load_existing; backup_all
+ systemctl stop "$PROJECT_PATH" 2>/dev/null || true
+ rm -rf "$APP" "$VENV"
+ packages; directories; repository; python_env; database
+ backend
+ systemctl restart "$PROJECT_PATH" >>"$LOG" 2>&1 || fail "Backend startet nicht."
+ n=0; until curl -fsS --unix-socket "$SOCK" -H 'Host: localhost' http://localhost/api/health >/dev/null 2>&1; do n=$((n+1)); [ "$n" -lt 20 ] || fail "Backend-Health-Check fehlgeschlagen."; sleep 1; done
+ runuser -u "$USER" -- sh -c "set -a; . '$ENV'; set +a; cd '$APP'; '$VENV/bin/python' backend.py refresh" >>"$LOG" 2>&1 || fail "CSV-Prüfung fehlgeschlagen."
+ systemctl reload caddy >>"$LOG" 2>&1 || systemctl restart caddy >>"$LOG" 2>&1 || fail "Caddy konnte nicht geladen werden."
+ printf '
+Update abgeschlossen
+Daten: unverändert
+Webserver: unverändert
+Log: %s
+' "$LOG"
+}
+reset_existing(){
+ confirm_word 'Reset erstellt zuerst eine Sicherung und löscht danach Konfiguration, Regeln, Cache und Datenbank.' RESET || { printf 'Abgebrochen.
+'; exit 0; }
+ backup_all
+ systemctl disable --now "$PROJECT_PATH" >/dev/null 2>&1 || true
+ rm -rf "$APP" "$VENV" "$DATA" "$ENV" "$UNIT" "$SITE" "$PROJECT_ROOT/caddy"
+ systemctl daemon-reload
+ DB="$(printf %s "$PROJECT_PATH" | tr - _)"
+ runuser -u postgres -- dropdb --if-exists "$DB" >>"$LOG" 2>&1 || true
+ runuser -u postgres -- psql -c "DROP ROLE IF EXISTS "$DB";" >>"$LOG" 2>&1 || true
+ install_questions; packages; directories; repository; python_env; database; configuration; backend; web; verify
+}
+delete_existing(){
+ confirm_word 'Delete entfernt Dienst, App, Konfiguration, Regeln, Cache und Datenbank. Vorher wird gesichert.' DELETE || { printf 'Abgebrochen.
+'; exit 0; }
+ backup_all
+ systemctl disable --now "$PROJECT_PATH" >/dev/null 2>&1 || true
+ rm -f "$UNIT" "$SITE"; rm -rf "$PROJECT_ROOT" "$DATA" "$(dirname "$ENV")"
+ systemctl daemon-reload
+ DB="$(printf %s "$PROJECT_PATH" | tr - _)"
+ runuser -u postgres -- dropdb --if-exists "$DB" >>"$LOG" 2>&1 || true
+ runuser -u postgres -- psql -c "DROP ROLE IF EXISTS "$DB";" >>"$LOG" 2>&1 || true
+ systemctl reload caddy >/dev/null 2>&1 || systemctl restart caddy >/dev/null 2>&1 || true
+ id "$USER" >/dev/null 2>&1 && userdel "$USER" >/dev/null 2>&1 || true
+ printf '
+CSV Reporting gelöscht.
+Sicherung: %s
+' "$BACKUP_ROOT"
+}
+
+install_questions(){
+ EXISTING_ACTION=install
  if listens 80 || listens 443; then
   P80="$(process_on 80)"; P443="$(process_on 443)"; [ -n "$P80" ] || P80=belegt; [ -n "$P443" ] || P443=belegt
   printf '\nWebserver belegt\n80:  %s\n443: %s\n' "$P80" "$P443"
@@ -94,27 +167,6 @@ Vorhandene Installation
  CSV_URL="$(ask "CSV-Quell-URL" "$OLD_CSV")"
  EDITOR="$(ask "Regel-Editor (true/false)" "$OLD_EDITOR")"
  URL="$ADDRESS${PROJECT_URL_PATH%/}/"
-}
-
-backup_existing(){
- [ "$EXISTING_ACTION" != install ] || return 0
- stamp="$(date +%Y%m%d-%H%M%S)"; BACKUP_ROOT="/var/backups/$PROJECT_PATH/$stamp"; install -d -m 0700 "$BACKUP_ROOT"
- [ ! -d "$APP" ] || cp -a "$APP" "$BACKUP_ROOT/app"
- [ ! -d "$VENV" ] || cp -a "$VENV" "$BACKUP_ROOT/venv"
- [ ! -d "$STATE" ] || cp -a "$STATE" "$BACKUP_ROOT/state"
- [ ! -f "$ENV" ] || cp -a "$ENV" "$BACKUP_ROOT/environment"
- [ ! -f "$SITE" ] || cp -a "$SITE" "$BACKUP_ROOT/csv-reporting.caddy"
- [ ! -f "$UNIT" ] || cp -a "$UNIT" "$BACKUP_ROOT/csv-reporting.service"
- printf 'Sicherung: %s
-' "$BACKUP_ROOT"
- systemctl stop "$PROJECT_PATH" 2>/dev/null || true
- rm -rf "$APP" "$VENV"
-}
-restore_data(){
- [ -n "${BACKUP_ROOT:-}" ] || return 0
- if [ ! -d "$STATE" ] && [ -d "$BACKUP_ROOT/state" ]; then install -d -o "$USER" -g "$USER" -m 0750 "$DATA"; cp -a "$BACKUP_ROOT/state" "$STATE"; fi
- if [ ! -f "$ENV" ] && [ -f "$BACKUP_ROOT/environment" ]; then install -d -m 0750 "$(dirname "$ENV")"; cp -a "$BACKUP_ROOT/environment" "$ENV"; fi
- chown -R "$USER:$USER" "$STATE" 2>/dev/null || true
 }
 
 packages(){ export DEBIAN_FRONTEND=noninteractive; apt-get update -qq >>"$LOG" 2>&1 && apt-get install -y -qq --no-install-recommends ca-certificates caddy curl git iproute2 openssl postgresql python3 python3-pip python3-venv >>"$LOG" 2>&1 || fail "Paketinstallation fehlgeschlagen."; step 1 System OK; }
@@ -256,5 +308,16 @@ verify(){
  step 10 CSV OK; printf '\nURL: %s\n' "$URL"; [ "$MODE" = 1 ] && [ "$TLS_MODE" = 1 ] && printf 'CA:  /var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt\n'; printf 'Log: %s\n' "$LOG"
 }
 
-main(){ init; questions; backup_existing; packages; directories; restore_data; repository; python_env; database; configuration; backend; web; verify; }
+main(){
+ init
+ printf 'CSV Reporting Setup v%s
+' "$SETUP_VERSION"
+ main_menu
+ case "$ACTION" in
+  install) install_questions; packages; directories; repository; python_env; database; configuration; backend; web; verify;;
+  update) update_existing;;
+  reset) reset_existing;;
+  delete) delete_existing;;
+ esac
+}
 main "$@"
