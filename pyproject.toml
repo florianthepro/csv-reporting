@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ftpkit-csv-reporting"
+version = "1.0.0"
+description = "Managed CSV reporting web application for the ftpkit architecture."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [{name = "Florian Kutzer"}]
+dependencies = ["ftpkit>=1.0.0,<2"]
+
+[project.scripts]
+csv-reporting = "csv_reporting.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+csv_reporting = ["frontend/*", "app-manifest.json"]
