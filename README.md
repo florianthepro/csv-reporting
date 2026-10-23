@@ -2,6 +2,11 @@
 
 CSV Reporting lädt eine CSV-Quelle, stellt gefilterte Tabellenansichten bereit und enthält einen webbasierten Regel-Editor.
 
+## Download
+```
+curl -fsSL https://raw.githubusercontent.com/florianthepro/csv-reporting/main/setup.sh | sudo bash
+```
+
 ## Frontend
 
 Das Frontend liegt in `frontend/`:
