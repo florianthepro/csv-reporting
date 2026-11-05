@@ -323,17 +323,9 @@ function rule_matches($rule,$header,$row,$timestampCols){
 function get_matching_rules($header,$row,$rules,$timestampCols){
   $matched=[];
   foreach($rules as $idx=>$rule){
-    if(!rule_matches($rule,$header,$row,$timestampCols))continue;
-    $generated=(string)($rule['description']??'Rule '.($idx+1));
-    $alternative=trim((string)($rule['alternative_title']??''));
-    $data=[];$seen=[];
-    foreach(($rule['conditions']??[]) as $cond){
-      $col=trim((string)($cond['column']??''));$key=strtolower($col);
-      if($col===''||isset($seen[$key]))continue;$seen[$key]=true;
-      $value=cell_by_colname($header,$row,$col);$minutes=timestamp_to_minutes($value);
-      $data[]=['column'=>$col,'value'=>$minutes!==null?intval($minutes).' min':(trim((string)$value)===''?'n/a':(string)$value)];
+    if(rule_matches($rule,$header,$row,$timestampCols)){
+      $matched[]=['idx'=>$idx,'desc'=>$rule['description']??'Rule '.($idx+1)];
     }
-    $matched[]=['idx'=>$idx,'desc'=>$generated,'title'=>$alternative!==''?$alternative:$generated,'notes'=>(string)($rule['overlay_notes']??''),'data'=>$data];
   }
   return $matched;
 }
@@ -483,7 +475,7 @@ th{background:var(--panelhead);color:var(--fg)}
 .rules-overlay.visible{display:block}
 .rules-overlay-title{font-weight:bold;margin-bottom:8px;color:var(--accent);border-bottom:1px solid var(--accent);padding-bottom:6px;font-size:12px}
 .rules-overlay-item{padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;line-height:1.3;word-break:break-word}
-.rules-overlay-item:last-child{border-bottom:none}.rules-overlay-item{cursor:pointer}.rules-overlay-item:hover{color:var(--accent)}.rule-detail-overlay{position:fixed;inset:0;display:none;z-index:10001;background:rgba(0,0,0,.72);padding:24px;box-sizing:border-box}.rule-detail-overlay.visible{display:flex;align-items:center;justify-content:center}.rule-detail-panel{width:min(1040px,100%);max-height:100%;overflow:auto;background:var(--panel);color:var(--fg);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 32px var(--shadow);padding:24px;box-sizing:border-box}.rule-detail-header{display:flex;justify-content:space-between;gap:20px;border-bottom:1px solid var(--border);padding-bottom:16px;margin-bottom:20px}.rule-detail-title{font-size:22px;font-weight:bold;line-height:1.35;overflow-wrap:anywhere}.rule-detail-close{border:0;background:none;color:var(--fg);font-size:30px;cursor:pointer}.rule-detail-section{margin-top:20px}.rule-detail-heading{font-size:12px;text-transform:uppercase;color:var(--muted);font-weight:bold;margin-bottom:8px}.rule-detail-rule,.rule-detail-data{background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:14px}.rule-detail-rule,.rule-detail-notes{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55}.rule-detail-data{display:grid;grid-template-columns:minmax(150px,auto) 1fr;gap:7px 18px}.rule-detail-name{font-weight:bold;color:var(--muted)}.rule-detail-value{overflow-wrap:anywhere}@media(max-width:600px){.rule-detail-overlay{padding:8px}.rule-detail-panel{padding:16px}.rule-detail-data{grid-template-columns:1fr}}
+.rules-overlay-item:last-child{border-bottom:none}
 .filter-toggle{background:var(--panel);border:1px solid var(--border);border-radius:3px;padding:10px;margin-bottom:12px;cursor:pointer;user-select:none;display:flex;justify-content:space-between;align-items:center;color:var(--fg)}
 .filter-toggle:hover{background:var(--panel2)}
 .filter-toggle-icon{font-weight:bold;color:var(--accent)}
@@ -544,7 +536,6 @@ a{color:var(--link)}
 <div class="rules-overlay-title">Zutreffende Regeln:</div>
 <div id="rulesContent"></div>
 </div>
-<div class="rule-detail-overlay" id="ruleDetailOverlay"><div class="rule-detail-panel" role="dialog" aria-modal="true"><div class="rule-detail-header"><div class="rule-detail-title" id="ruleDetailTitle"></div><button type="button" class="rule-detail-close" onclick="closeRuleDetail()">×</button></div><div class="rule-detail-section"><div class="rule-detail-heading">Regel</div><div class="rule-detail-rule" id="ruleDetailRule"></div></div><div class="rule-detail-section" id="ruleNotesSection"><div class="rule-detail-heading">Hinweis / Notes</div><div class="rule-detail-notes" id="ruleDetailNotes"></div></div><div class="rule-detail-section"><div class="rule-detail-heading">Relevante CSV-Daten</div><div class="rule-detail-data" id="ruleDetailData"></div></div></div></div>
 <script>
 (function(){"use strict";var btn=document.querySelector("[data-fk-menu-btn]");var overlay=document.querySelector("[data-fk-menu-overlay]");var closers=document.querySelectorAll("[data-fk-menu-close]");var isOpen=false;if(!btn||!overlay)return;function openMenu(){if(isOpen)return;isOpen=true;overlay.classList.add("is-visible");overlay.setAttribute("aria-hidden","false");document.documentElement.style.overflow="hidden"}function closeMenu(){if(!isOpen)return;isOpen=false;overlay.classList.remove("is-visible");overlay.setAttribute("aria-hidden","true");document.documentElement.style.overflow=""}btn.addEventListener("click",function(e){e.stopPropagation();isOpen?closeMenu():openMenu()});closers.forEach(function(el){el.addEventListener("click",closeMenu)});overlay.addEventListener("click",function(e){var panel=overlay.querySelector(".fk-menu-panel");if(panel&&!panel.contains(e.target))closeMenu()});document.addEventListener("keydown",function(e){if(e.key==="Escape")closeMenu()})})();
 </script>
@@ -625,10 +616,36 @@ url.searchParams.set(key,value);
 }
 return url.toString();
 }
-function showRuleDetail(r){var o=document.getElementById('ruleDetailOverlay');document.getElementById('ruleDetailTitle').textContent=r.title||r.desc||'';document.getElementById('ruleDetailRule').textContent=r.desc||'';var n=r.notes||'';document.getElementById('ruleDetailNotes').textContent=n;document.getElementById('ruleNotesSection').style.display=n.trim()===''?'none':'';var d=document.getElementById('ruleDetailData');d.innerHTML='';(r.data||[]).forEach(function(e){var a=document.createElement('div');a.className='rule-detail-name';a.textContent=e.column;var b=document.createElement('div');b.className='rule-detail-value';b.textContent=e.value;d.appendChild(a);d.appendChild(b)});o.classList.add('visible');document.documentElement.style.overflow='hidden'}
-function closeRuleDetail(){document.getElementById('ruleDetailOverlay').classList.remove('visible');document.documentElement.style.overflow=''}
-function showRulesOverlay(event,rules){var o=document.getElementById('rulesOverlay'),c=document.getElementById('rulesContent');c.innerHTML='';rules.forEach(function(r){var d=document.createElement('div');d.className='rules-overlay-item';var t=r.title||r.desc||'';d.textContent=t.length>60?t.substring(0,57)+'...':t;d.tabIndex=0;d.onclick=function(e){e.stopPropagation();o.classList.remove('visible');showRuleDetail(r)};c.appendChild(d)});o.style.left=Math.max(8,Math.min(event.clientX+10,window.innerWidth-420))+'px';o.style.top=Math.max(8,Math.min(event.clientY+10,window.innerHeight-320))+'px';o.classList.add('visible');setTimeout(function(){document.addEventListener('click',function h(e){if(!o.contains(e.target)&&e.target!==event.target){o.classList.remove('visible');document.removeEventListener('click',h)}})},0)}
-document.getElementById('ruleDetailOverlay').addEventListener('click',function(e){if(e.target===this)closeRuleDetail()});document.addEventListener('keydown',function(e){if(e.key==='Escape')closeRuleDetail()});
+function showRulesOverlay(event,rules){
+var overlay=document.getElementById('rulesOverlay');
+var content=document.getElementById('rulesContent');
+content.innerHTML='';
+rules.forEach(function(r){
+var div=document.createElement('div');
+div.className='rules-overlay-item';
+var text=r.desc;
+if(text.length>60){
+text=text.substring(0,57)+'...';
+}
+div.textContent=text;
+content.appendChild(div);
+});
+var maxX=window.innerWidth-420;
+var x=Math.min(event.clientX+10,maxX);
+var maxY=window.innerHeight-320;
+var y=Math.min(event.clientY+10,maxY);
+overlay.style.left=x+'px';
+overlay.style.top=y+'px';
+overlay.classList.add('visible');
+setTimeout(function(){
+document.addEventListener('click',function hideOverlay(e){
+if(!overlay.contains(e.target)&&e.target!==event.target){
+overlay.classList.remove('visible');
+document.removeEventListener('click',hideOverlay);
+}
+});
+},0);
+}
 </script>
 </body>
 </html>
@@ -718,7 +735,7 @@ th{background:var(--panelhead)}
 .view-toggle{display:inline-flex;align-items:center;gap:6px;margin-left:10px;font-size:13px}
 button:disabled{opacity:.45;cursor:not-allowed}
 a{color:var(--link)}
-body{max-width:1500px;margin:18px auto;padding:0 18px;box-sizing:border-box}section{background:var(--panel);border:1px solid var(--border);border-radius:7px;padding:16px;margin-top:16px}section h2{font-size:17px;margin-bottom:12px}input[type=text],textarea,select{box-sizing:border-box;min-height:34px}button{min-height:32px}#rules-body tr:hover td{background:var(--panel2)}#rules-body td:nth-child(2){line-height:1.45;overflow-wrap:anywhere}.modal{width:min(920px,calc(100vw - 32px));padding:20px;box-sizing:border-box;border:1px solid var(--border);box-shadow:0 10px 35px var(--shadow)}.rule-field{display:block;margin-top:14px}.rule-field-title{display:block;font-size:12px;font-weight:bold;color:var(--muted);margin-bottom:5px}.rule-field input,.rule-field textarea{width:100%}#r-notes{min-height:120px;resize:vertical;line-height:1.5}#r-desc{background:var(--panel2)}.condition-row{background:var(--bg);border:1px solid var(--border);padding:8px;border-radius:5px}@media(max-width:700px){body{padding:0 8px}.condition-row{flex-wrap:wrap}.condition-row select{width:100%}section{padding:12px}}</style>
+*{box-sizing:border-box}body{margin:0;padding:0}.ed-side{position:fixed;inset:0 auto 0 0;width:220px;background:var(--panel);border-right:1px solid var(--border);padding:10px;z-index:1000}.ed-side.closed{width:58px}.ed-side.closed .ed-text{display:none}.ed-toggle{width:36px}.ed-nav{margin-top:14px}.ed-nav button,.ed-nav a{display:flex;width:100%;padding:9px;border:0;background:transparent;color:var(--fg);text-decoration:none;text-align:left;border-radius:4px}.ed-nav button.active{background:var(--accent);color:var(--accent-fg)}.ed-main{margin-left:220px;padding:18px}.ed-side.closed~.ed-main{margin-left:58px}.ed-head{display:flex;justify-content:space-between;align-items:center}.ed-head-actions{display:flex;gap:7px}.ed-pane{display:none}.ed-pane.active{display:block}.ed-card{margin-top:14px;padding:14px;background:var(--panel);border:1px solid var(--border);border-radius:4px}.ed-save{margin-top:14px}.fk-menu-btn,.fk-menu-overlay{display:none!important}table th:nth-child(1){width:55px}table th:nth-child(2){width:230px}td:nth-child(2) button{margin-right:4px}@media(max-width:700px){.ed-side{width:58px}.ed-side .ed-text{display:none}.ed-main{margin-left:58px;padding:10px}}</style>
 <style id="theme-tokens">
 :root{
 --bg:#ffffff;--fg:#141414;--muted:#5a5f66;--border:#d5d7dd;
@@ -746,7 +763,7 @@ body{max-width:1500px;margin:18px auto;padding:0 18px;box-sizing:border-box}sect
 }}
 </style>
 </head>
-<body>
+<body><aside class="ed-side" id="edSide"><button type="button" class="ed-toggle" id="edToggle">☰</button><nav class="ed-nav"><a href="?"><span class="ed-text">Index</span></a><button type="button" class="active" data-pane="general"><span class="ed-text">Allgemein</span></button><button type="button" data-pane="rules"><span class="ed-text">Regeln</span></button></nav></aside><main class="ed-main"><div class="ed-head"><h1><?=$csvreporting_editorheading?></h1><div class="ed-head-actions" id="ruleTopActions" style="display:none"><button type="button" onclick="openHelp()">Hilfe</button><button type="button" class="primary" onclick="openRule(-1)">+ Regel</button></div></div>
 <button class="fk-menu-btn" data-fk-menu-btn>☰</button>
 <div class="fk-menu-overlay" data-fk-menu-overlay aria-hidden="true">
 <div class="fk-menu-backdrop" data-fk-menu-close></div>
@@ -763,38 +780,31 @@ body{max-width:1500px;margin:18px auto;padding:0 18px;box-sizing:border-box}sect
 <script>
 (function(){"use strict";var btn=document.querySelector("[data-fk-menu-btn]");var overlay=document.querySelector("[data-fk-menu-overlay]");var closers=document.querySelectorAll("[data-fk-menu-close]");var isOpen=false;if(!btn||!overlay)return;function openMenu(){if(isOpen)return;isOpen=true;overlay.classList.add("is-visible");overlay.setAttribute("aria-hidden","false");document.documentElement.style.overflow="hidden"}function closeMenu(){if(!isOpen)return;isOpen=false;overlay.classList.remove("is-visible");overlay.setAttribute("aria-hidden","true");document.documentElement.style.overflow=""}btn.addEventListener("click",function(e){e.stopPropagation();isOpen?closeMenu():openMenu()});closers.forEach(function(el){el.addEventListener("click",closeMenu)});overlay.addEventListener("click",function(e){var panel=overlay.querySelector(".fk-menu-panel");if(panel&&!panel.contains(e.target))closeMenu()});document.addEventListener("keydown",function(e){if(e.key==="Escape")closeMenu()})})();
 </script>
-<h1 style="margin-top:72px"><?=$csvreporting_editorheading?></h1>
+
 <?php if($save_msg){?><div class="info"><?php echo h($save_msg);?></div><?php } ?>
 <?php if($load_error){?><div class="error"><?php echo h($load_error);?></div><?php } ?>
 <form method="post" id="rules-form" onkeydown="if(event.key==='Enter'&&event.target.tagName==='INPUT')event.preventDefault()">
 <input type="hidden" name="action" value="save"><input type="hidden" name="json" id="rules-json">
 
-<section>
+<div class="ed-pane active" data-pane-content="general"><div class="ed-card">
 <h2>Spalten ausblenden:</h2>
 <div style="margin-top:8px"></div><!-- <- --><div style="display:flex;flex-wrap:wrap;gap:8px;"><?php foreach($cols as $c){$hidden=!in_array($c,$show_columns,true);?><label><input type="checkbox" class="show-col-cb" value="<?php echo h($c);?>"<?php if($hidden)echo' checked';?>><?php echo h($column_renames[$c]??$c);?></label><?php } ?></div>
-</section>
-<section>
+</div><div class="ed-card">
 <h2>Spalten umbenennen:</h2>
 <div class="filter-item"><div class="filter-label"></div><!-- <- --><select id="rename-col-select" onchange="updateRenameInput()"><option value="">-- Spalte wählen --</option><?php foreach($cols as $c): ?><option value="<?php echo h($c);?>"><?php echo h($c);?></option><?php endforeach; ?></select></div><div class="filter-item" style="margin-top:8px"><div class="filter-label">Neuer Anzeigename</div><input type="text" id="rename-col-value"></div>
-</section>
-
-<section>
+</div><div class="ed-card">
 <h2>Generische Links</h2>
 <label>
-<input type="checkbox" id="enable-links"<?php if($enable_links)echo' checked';?>> aktiv</label><div class="filter-item" style="margin-top:8px"><div class="filter-label">Spalte</div><select id="link-col-select" onchange="updateLinkInput()"><option value="">-- Spalte wählen --</option><?php foreach($cols as $c): ?><option value="<?php echo h($c);?>"><?php echo h($column_renames[$c]??$c);?></option><?php endforeach; ?></select></div><div class="filter-item" style="margin-top:8px"><div class="filter-label">Link mit/ohne `*` oder *</div><input type="text" id="link-col-value" placeholder=""></div></section>
-<section>
+<input type="checkbox" id="enable-links"<?php if($enable_links)echo' checked';?>> aktiv</label><div class="filter-item" style="margin-top:8px"><div class="filter-label">Spalte</div><select id="link-col-select" onchange="updateLinkInput()"><option value="">-- Spalte wählen --</option><?php foreach($cols as $c): ?><option value="<?php echo h($c);?>"><?php echo h($column_renames[$c]??$c);?></option><?php endforeach; ?></select></div><div class="filter-item" style="margin-top:8px"><div class="filter-label">Link mit/ohne `*` oder *</div><input type="text" id="link-col-value" placeholder=""></div></div></div><div class="ed-pane" data-pane-content="rules"><div class="ed-card">
 <h2>Regeln</h2>
-<button type="button" class="primary" onclick="openRule(-1)">Regel hinzufügen</button>
-<label class="view-toggle"><input type="checkbox" id="view-flat">nur Aktiv/Deaktiv</label>
-<table><thead><tr><th style="width:60px">#</th><th>Beschreibung</th><th style="width:280px">Aktionen</th></tr></thead><tbody id="rules-body"></tbody></table>
-</section>
-<div style="margin-top:14px"><button type="submit" class="primary">Speichern</button><button type="button" onclick="openHelp()" style="margin-left:8px">Hilfe</button></div>
-</form>
+
+
+<table><thead><tr><th>#</th><th>Aktionen</th><th>Regel</th></tr></thead><tbody id="rules-body"></tbody></table>
+</div></div>
+<div class="ed-save"><button type="submit" class="primary">Speichern</button></div>
+</form></main>
 <div class="modal-backdrop" id="rule-modal"><div class="modal"><div class="modal-header"><div class="modal-title">Regel bearbeiten</div><button type="button" onclick="closeRule()" class="modal-close">×</button></div>
-<label class="rule-field"><span class="rule-field-title">Alternativer Titel</span><input type="text" id="r-title" placeholder="Leer lassen für den automatisch generierten Titel"></label>
-<label class="rule-field"><span class="rule-field-title">Automatisch generierte Regel</span><input type="text" id="r-desc" readonly></label>
-<label class="rule-field"><span class="rule-field-title">Hinweis / Notes für das Regel-Overlay</span><textarea id="r-notes" placeholder="Zusätzliche Erklärung oder wichtiger Hinweis"></textarea></label>
-<label class="rule-field"><span class="rule-field-title">Bedingungen (UND)</span></label><div id="r-conds"></div><button type="button" class="small" onclick="addCond()" style="margin-top:8px">+ Bedingung</button>
+<label style="display:block"><span>Titel <small id="r-title-mode">Automatisch</small></span><input type="text" id="r-title" style="width:100%" placeholder="Leer lassen für automatischen Titel" oninput="updateTitleMode()"></label><label style="display:block;margin-top:8px">Notiz im Index-Overlay<textarea id="r-notes" rows="3"></textarea></label><label style="display:block;margin-top:8px">Interne Info<textarea id="r-info" rows="3"></textarea></label><label style="display:block;margin-top:8px">Bedingungen</label><div id="r-conds"></div><button type="button" class="small" onclick="addCond()" style="margin-top:6px">+ Bedingung</button><input type="hidden" id="r-desc">
 <div style="margin-top:10px;display:flex;justify-content:flex-end;gap:6px"><button type="button" onclick="closeRule()">Abbrechen</button><button type="button" class="primary" onclick="applyRule()">Übernehmen</button></div>
 </div></div>
 <div class="modal-backdrop" id="info-modal"><div class="modal"><div class="modal-header"><div class="modal-title">Info</div><button type="button" onclick="closeInfo()" class="modal-close">×</button></div>
@@ -854,6 +864,10 @@ function buildAutoDescFromConditions(conds){
 if(!Array.isArray(conds)||conds.length===0)return "";
 return conds.map(c=>String(c.column||"")+" "+(c.negate?"≠":"=")+" "+String(c.pattern||"")).join(" & ").replace(/\s+/g," ").trim();
 }
+function ruleCols(r){let a=[],seen=new Set();(Array.isArray(r&&r.conditions)?r.conditions:[]).forEach(c=>{let v=String(c.column||"").trim();if(v&&!seen.has(v)){seen.add(v);a.push(v)}});a.sort((x,y)=>{let xi=COLS.indexOf(x),yi=COLS.indexOf(y);if(xi<0)xi=999999;if(yi<0)yi=999999;return xi-yi||x.localeCompare(y)});return a}
+function effectiveTitle(r){return String((r&&r.alternative_title)||ruleDisplayTitle(r)||"")}
+function ruleKey(r){return ruleCols(r).map(c=>String(COLS.indexOf(c)<0?999999:COLS.indexOf(c)).padStart(6,"0")+":"+c.toLowerCase()).join("|")}
+function sortRules(){DATA.rules=DATA.rules.map((r,i)=>({r,i})).sort((a,b)=>{let ak=ruleKey(a.r),bk=ruleKey(b.r),ai=!ak,bi=!bk;if(ai!==bi)return ai?-1:1;return ak.localeCompare(bk,undefined,{numeric:true})||effectiveTitle(a.r).localeCompare(effectiveTitle(b.r),undefined,{numeric:true,sensitivity:"base"})||a.i-b.i}).map(x=>x.r)}
 function parseTitleToConditions(desc){
 let t=dec5(stripInactivePrefix(desc));
 if(!t)return [];
@@ -872,6 +886,7 @@ out.push({column:col,pattern:pat,negate:op==="≠"});
 }
 return out;
 }
+function updateTitleMode(){var i=document.getElementById("r-title"),m=document.getElementById("r-title-mode");if(i&&m)m.textContent=i.value.trim()?"Individuell":"Automatisch";}
 function updateDescFromDom(){
 var rows=document.querySelectorAll("#r-conds .condition-row");var list=[];
 rows.forEach(r=>{var c=r.querySelector("select").value.trim();var p=r.querySelector('input[type=text]').value.trim();var n=r.querySelector('input[type=checkbox]').checked;if(c!==""&&p!=="")list.push({column:c,pattern:p,negate:n});});
@@ -899,6 +914,7 @@ let title=dec5(stripInactivePrefix(r.description||""));
 r.description="!..."+(title?(" "+enc5(title)):"");
 }
 });
+sortRules();
 document.getElementById("rules-json").value=JSON.stringify(DATA);
 }
 document.getElementById("rules-form").onsubmit=sync;
@@ -939,121 +955,12 @@ r.description=buildAutoDescFromConditions(r.conditions);
 render();
 }
 function render(){
-let tb=document.getElementById("rules-body");tb.innerHTML="";
-let groups={};let inactive=[];let active=[];
-DATA.rules.forEach((r,i)=>{
-if(!r||typeof r!=="object")return;
-let conds=Array.isArray(r.conditions)?r.conditions:[];
-if(conds.length===0){inactive.push({i,r});}
-else active.push({i,r});
-if(!VIEW_FLAT){
-let used=[...new Set(conds.map(c=>c.column))];
-used.forEach(col=>{if(!groups[col])groups[col]=[];groups[col].push({i,r});});
-}
-});
-function addGroup(key,title,items){
-let tr=document.createElement("tr");tr.className="group-row";tr.setAttribute("data-group",key);
-let icon=(GROUP_OPEN[key]===false)?"▼":"▲";
-tr.innerHTML="<td colspan='3'><div class='group-title'><span>"+esc(title)+"</span><span class='group-icon'>"+icon+"</span></div></td>";
-tr.onclick=()=>toggleGroup(key);
-tb.appendChild(tr);
-items.forEach(x=>{
-let r=x.r;let i=x.i;
-let conds=Array.isArray(r.conditions)?r.conditions:[];
-let enabled=conds.length>0;
-if(enabled)r.description=buildAutoDescFromConditions(conds);
-else{
-let title=dec5(stripInactivePrefix(r.description||""));
-r.description="!..."+(title?(" "+enc5(title)):"");
-}
-let tr2=document.createElement("tr");
-tr2.setAttribute("data-group-item",key);
-tr2.setAttribute("data-rule-idx",String(i));
-tr2.setAttribute("draggable","true");
-let hasInfo=!!(r.info&&String(r.info).trim()!=="");
-let infoBadge=hasInfo?" <span class='badge info' data-info-idx='"+i+"'>info</span>":"";
-tr2.innerHTML="<td>"+(i+1)+"</td><td>"+esc(ruleDisplayTitle(r))+infoBadge+"</td>";
-let td=document.createElement("td");td.style.whiteSpace="nowrap";
-let b=document.createElement("button");b.type="button";b.textContent="Edit";b.className="small";b.disabled=!enabled;b.onclick=e=>{e.stopPropagation();openRule(i);};
-let tog=document.createElement("button");tog.type="button";tog.textContent=enabled?"Deaktivieren":"Aktivieren";tog.className="small";tog.style.marginLeft="6px";tog.onclick=e=>{e.stopPropagation();enabled?deactivateRule(i):activateRule(i);};
-let info=document.createElement("button");info.type="button";info.textContent="Info";info.className="small";info.style.marginLeft="6px";info.onclick=e=>{e.stopPropagation();openInfo(i);};
-let del=document.createElement("button");del.type="button";del.textContent="X";del.className="small";del.style.marginLeft="6px";del.onclick=e=>{e.stopPropagation();deleteRule(i);};
-td.appendChild(b);td.appendChild(tog);td.appendChild(info);td.appendChild(del);
-tr2.appendChild(td);
-tb.appendChild(tr2);
-});
-}
-if(VIEW_FLAT){
-addGroup("__active","Aktiv",active);
-addGroup("__inactive","Deaktiv",inactive);
-applyGroupVisibility();
-attachInfoBadges();
-return;
-}
-if(inactive.length>0)addGroup("__inactive","Inaktiv / Spezial (!...)",inactive);
-Object.keys(groups).sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"})).forEach(col=>{
-let title=(DATA.column_renames&&DATA.column_renames[col])?DATA.column_renames[col]+" ("+col+")":col;
-addGroup(col,title,groups[col]);
-});
-applyGroupVisibility();
-attachGroupDnD();
-attachInfoBadges();
-}
-var DND_STATE=null;
-function attachGroupDnD(){
-Array.from(document.querySelectorAll("tr[data-group-item]")).forEach(tr=>{
-tr.ondragstart=e=>{
-let key=tr.getAttribute("data-group-item");
-let idx=parseInt(tr.getAttribute("data-rule-idx")||"-1",10);
-if(!key||idx<0)return;
-DND_STATE={key:key,fromIdx:idx,el:tr};
-tr.style.opacity="0.5";
-try{e.dataTransfer.setData("text/plain","x");}catch(_){}
-e.dataTransfer.effectAllowed="move";
-e.stopPropagation();
-};
-tr.ondragend=()=>{
-tr.style.opacity="";
-DND_STATE=null;
-};
-tr.ondragover=e=>{
-if(!DND_STATE)return;
-let key=tr.getAttribute("data-group-item");
-if(key!==DND_STATE.key)return;
-e.preventDefault();
-e.dataTransfer.dropEffect="move";
-let r=tr.getBoundingClientRect();
-let before=e.clientY<(r.top+r.height/2);
-let parent=tr.parentNode;
-if(before)parent.insertBefore(DND_STATE.el,tr);
-else parent.insertBefore(DND_STATE.el,tr.nextSibling);
-};
-tr.ondrop=e=>{
-if(!DND_STATE)return;
-let key=tr.getAttribute("data-group-item");
-if(key!==DND_STATE.key)return;
-e.preventDefault();
-applyGroupOrderFromDom(DND_STATE.key);
-DND_STATE=null;
-render();
-};
-});
-}
-function applyGroupOrderFromDom(groupKey){
-let rows=Array.from(document.querySelectorAll('tr[data-group-item="'+CSS.escape(groupKey)+'"]'));
-let domOrder=rows.map(r=>parseInt(r.getAttribute("data-rule-idx")||"-1",10)).filter(n=>Number.isFinite(n)&&n>=0);
-let n=DATA.rules.length;
-if(domOrder.length===0)return;
-let subset=new Set(domOrder);
-let orig=DATA.rules.slice();
-let p=0;
-let out=[];
-for(let i=0;i<n;i++){
-if(subset.has(i)){out.push(orig[domOrder[p++]]);}
-else out.push(orig[i]);
-}
-DATA.rules=out;
-}
+let tb=document.getElementById("rules-body");tb.innerHTML="";let active=[],inactive=[];DATA.rules.forEach((r,i)=>{if(!r||typeof r!=="object")return;((Array.isArray(r.conditions)&&r.conditions.length)?active:inactive).push({r,i})});
+active.sort((a,b)=>ruleKey(a.r).localeCompare(ruleKey(b.r),undefined,{numeric:true})||effectiveTitle(a.r).localeCompare(effectiveTitle(b.r),undefined,{numeric:true,sensitivity:"base"})||a.i-b.i);inactive.sort((a,b)=>effectiveTitle(a.r).localeCompare(effectiveTitle(b.r),undefined,{numeric:true,sensitivity:"base"})||a.i-b.i);
+function row(x,key){let r=x.r,i=x.i,en=Array.isArray(r.conditions)&&r.conditions.length>0;if(en)r.description=buildAutoDescFromConditions(r.conditions);let tr=document.createElement("tr");if(key)tr.setAttribute("data-group-item",key);tr.innerHTML="<td>"+(i+1)+"</td>";let ac=document.createElement("td");let e=document.createElement("button");e.type="button";e.className="small";e.textContent="Edit";e.disabled=!en;e.onclick=()=>openRule(i);let t=document.createElement("button");t.type="button";t.className="small";t.textContent=en?"Deaktivieren":"Aktivieren";t.onclick=()=>en?deactivateRule(i):activateRule(i);let d=document.createElement("button");d.type="button";d.className="small";d.textContent="X";d.onclick=()=>deleteRule(i);ac.append(e,t,d);tr.appendChild(ac);let title=document.createElement("td");title.textContent=effectiveTitle(r);let badge=document.createElement("span");badge.className="badge";badge.textContent=r.alternative_title?"Individuell":"Automatisch";title.appendChild(badge);tr.appendChild(title);tb.appendChild(tr)}
+if(inactive.length){let k="__inactive",g=document.createElement("tr");g.className="group-row";g.setAttribute("data-group",k);let icon=GROUP_OPEN[k]===false?"▼":"▲";g.innerHTML="<td colspan='3'><div class='group-title'><span>Inaktiv ("+inactive.length+")</span><span class='group-icon'>"+icon+"</span></div></td>";g.onclick=()=>toggleGroup(k);tb.appendChild(g);inactive.forEach(x=>row(x,k))}active.forEach(x=>row(x,""));applyGroupVisibility();}
+
+
 let edit=-1;
 function openRule(i){
 edit=i;
@@ -1068,8 +975,9 @@ let c=document.getElementById("r-conds");c.innerHTML="";
 var conds=Array.isArray(r.conditions)?r.conditions:[];
 document.getElementById("r-title").value=typeof r.alternative_title==="string"?r.alternative_title:"";
 document.getElementById("r-notes").value=typeof r.overlay_notes==="string"?r.overlay_notes:"";
+document.getElementById("r-info").value=typeof r.info==="string"?r.info:"";
 if(conds.length>0)conds.forEach(x=>addCond(x));else addCond();
-updateDescFromDom();
+updateDescFromDom();updateTitleMode();
 modal.style.display="flex";
 }
 function closeRule(){document.getElementById("rule-modal").style.display="none";}
@@ -1095,11 +1003,9 @@ let n=r.querySelector("input[type=checkbox]").checked;
 if(c!==""&&p!=="")list.push({column:c,pattern:p,negate:n});
 });
 let previous=edit>=0&&DATA.rules[edit]&&typeof DATA.rules[edit]==="object"?DATA.rules[edit]:{};
-let rule=Object.assign({},previous,{conditions:list,description:"!..."});
-if(list.length>0)rule.description=buildAutoDescFromConditions(list);
-let alternativeTitle=document.getElementById("r-title").value.trim(),overlayNotes=document.getElementById("r-notes").value.trim();
-if(alternativeTitle!=="")rule.alternative_title=alternativeTitle;else delete rule.alternative_title;
-if(overlayNotes!=="")rule.overlay_notes=overlayNotes;else delete rule.overlay_notes;
+let rule=Object.assign({},previous,{conditions:list,description:list.length?buildAutoDescFromConditions(list):"!..."});
+let title=document.getElementById("r-title").value.trim(),notes=document.getElementById("r-notes").value.trim(),info=document.getElementById("r-info").value.trim();
+if(title)rule.alternative_title=title;else delete rule.alternative_title;if(notes)rule.overlay_notes=notes;else delete rule.overlay_notes;if(info)rule.info=info;else delete rule.info;
 if(edit>=0)DATA.rules[edit]=rule;else DATA.rules.push(rule);
 closeRule();render();
 }
@@ -1135,6 +1041,7 @@ if(idx>=0)openInfo(idx);
 };
 });
 }
+(function(){let side=document.getElementById("edSide"),toggle=document.getElementById("edToggle"),actions=document.getElementById("ruleTopActions");toggle.onclick=()=>side.classList.toggle("closed");document.querySelectorAll("[data-pane]").forEach(b=>b.onclick=function(){document.querySelectorAll("[data-pane]").forEach(x=>x.classList.remove("active"));document.querySelectorAll("[data-pane-content]").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.querySelector('[data-pane-content="'+b.dataset.pane+'"]').classList.add("active");actions.style.display=b.dataset.pane==="rules"?"flex":"none";});})();
 render();
 </script>
 </body>
