@@ -1,4 +1,4 @@
-<?php //read and write
+<?php //read and write ?_page=edit
 declare(strict_types=1);
 ///////////////////////
 $csvreporting_dwlextpage = 'https://hey.com/csv.csv'; #http<und/oder"s">s://domain.tld/csv.csv<oder"index.php">
