@@ -485,7 +485,7 @@ th{background:var(--panelhead);color:var(--fg)}
 .filter-item:last-child{margin-bottom:0}
 .filter-row select{padding:4px;border:1px solid var(--border);border-radius:3px;font-size:13px;width:100%;box-sizing:border-box;background:var(--bg);color:var(--fg)}
 .filter-label{font-size:12px;font-weight:bold;margin-bottom:4px;color:var(--muted)}
-.index-topline{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;min-height:44px;margin-bottom:10px}.index-topline h2{grid-column:1;margin:0;text-align:left}.index-topline .top-menu-toggle{grid-column:2;position:static}</style>
+.index-topline{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;min-height:44px;margin-bottom:10px}.index-topline h2{grid-column:1;margin:0;text-align:left}.top-inline-nav{grid-column:2;display:flex;align-items:center;justify-content:center;gap:18px}.top-inline-nav a,.top-inline-nav button{padding:0;border:0;background:transparent;color:var(--fg);font:inherit;font-size:14px;text-decoration:none;cursor:pointer}.top-inline-nav a:hover,.top-inline-nav button:hover,.top-inline-nav .active{color:var(--accent);text-decoration:underline;text-underline-offset:4px}</style>
 <style id="theme-tokens">
 :root{
 --bg:#ffffff;--fg:#141414;--muted:#5a5f66;--border:#d5d7dd;
@@ -519,26 +519,13 @@ a{color:var(--link)}
 </style>
 </head>
 <body>
-<div class="index-topline"><h2><?=$csvreporting_heading?></h2><button class="top-menu-toggle" data-fk-menu-btn>Menü</button></div>
-<div class="fk-menu-overlay" data-fk-menu-overlay aria-hidden="true">
-<div class="fk-menu-backdrop" data-fk-menu-close></div>
-<div class="fk-menu-panel">
-<button class="fk-menu-close" data-fk-menu-close>×</button>
-<nav class="fk-menu-nav">
-<a href="?" target="_self" class="fk-menu-link">index</a>
-<a href="?_page=map" target="_self" class="fk-menu-link">map</a>
-<a href="?_page=raw" target="_self" class="fk-menu-link">raw</a>
-<a href="?_page=edit" target="_self" class="fk-menu-link">edit</a>
-</nav>
-</div>
-</div>
+<div class="index-topline"><h2><?=$csvreporting_heading?></h2><nav class="top-inline-nav" aria-label="Navigation"><a href="?" class="active">Home</a><a href="?_page=edit&tab=general">Allgemeine Einstellungen</a><a href="?_page=edit&tab=rules">Regeln</a></nav></div>
+
 <div class="rules-overlay" id="rulesOverlay">
 <div class="rules-overlay-title">Zutreffende Regeln:</div>
 <div id="rulesContent"></div>
 </div>
-<script>
-(function(){"use strict";var btn=document.querySelector("[data-fk-menu-btn]");var overlay=document.querySelector("[data-fk-menu-overlay]");var closers=document.querySelectorAll("[data-fk-menu-close]");var isOpen=false;if(!btn||!overlay)return;function openMenu(){if(isOpen)return;isOpen=true;overlay.classList.add("is-visible");overlay.setAttribute("aria-hidden","false");document.documentElement.style.overflow="hidden"}function closeMenu(){if(!isOpen)return;isOpen=false;overlay.classList.remove("is-visible");overlay.setAttribute("aria-hidden","true");document.documentElement.style.overflow=""}btn.addEventListener("click",function(e){e.stopPropagation();isOpen?closeMenu():openMenu()});closers.forEach(function(el){el.addEventListener("click",closeMenu)});overlay.addEventListener("click",function(e){var panel=overlay.querySelector(".fk-menu-panel");if(panel&&!panel.contains(e.target))closeMenu()});document.addEventListener("keydown",function(e){if(e.key==="Escape")closeMenu()})})();
-</script>
+
 
 <?php if($csvError):?><div class="error"><?php echo h($csvError);?></div><?php endif;?>
 <h3>Ergebnisse (<?php echo count($filtered);?>)</h3>
@@ -735,7 +722,7 @@ th{background:var(--panelhead)}
 .view-toggle{display:inline-flex;align-items:center;gap:6px;margin-left:10px;font-size:13px}
 button:disabled{opacity:.45;cursor:not-allowed}
 a{color:var(--link)}
-*{box-sizing:border-box}body{margin:0;padding:0}.ed-side{position:fixed;inset:0 auto 0 0;width:220px;background:var(--panel);border-right:1px solid var(--border);padding:10px;z-index:1000}.ed-side.closed{width:58px}.ed-side.closed .ed-text{display:none}.ed-toggle{width:36px}.ed-nav{margin-top:14px}.ed-nav button,.ed-nav a{display:flex;width:100%;padding:9px;border:0;background:transparent;color:var(--fg);text-decoration:none;text-align:left;border-radius:4px}.ed-nav button.active{background:var(--accent);color:var(--accent-fg)}.ed-main{margin-left:220px;padding:18px}.ed-side.closed~.ed-main{margin-left:58px}.ed-head{display:flex;justify-content:space-between;align-items:center}.ed-head-actions{display:flex;gap:7px}.ed-pane{display:none}.ed-pane.active{display:block}.ed-card{margin-top:14px;padding:14px;background:var(--panel);border:1px solid var(--border);border-radius:4px}.ed-save{margin-top:14px}.ed-side{display:none!important}.ed-main,.ed-side.closed~.ed-main{margin-left:0}.fk-menu-btn{display:block!important}.fk-menu-overlay{display:none}.fk-menu-overlay.is-visible{display:block}table th:nth-child(1){width:55px}table th:nth-child(2){width:230px}td:nth-child(2) button{margin-right:4px}@media(max-width:700px){.ed-side{width:58px}.ed-side .ed-text{display:none}.ed-main{margin-left:58px;padding:10px}}.ed-head{position:relative;justify-content:center!important;min-height:44px;padding-left:0!important;gap:14px}.ed-head .fk-menu-btn{display:block!important;position:static!important;top:auto!important;left:auto!important;padding:8px 12px!important;font-size:14px!important}.ed-head h1{margin:0;text-align:center}.ed-head-actions{position:absolute;right:0}.rules-table-layout{table-layout:auto}.rules-table-layout th,.rules-table-layout td{text-align:left}.rules-table-layout th:first-child,.rules-table-layout td:first-child{width:52px;white-space:nowrap}.rules-table-layout th:nth-child(2),.rules-table-layout td:nth-child(2){width:1%;white-space:nowrap}.rules-table-layout th:nth-child(3),.rules-table-layout td:nth-child(3){width:auto}.ed-head{display:grid!important;grid-template-columns:1fr auto 1fr!important;align-items:center!important;min-height:44px;padding-left:0!important;gap:12px}.ed-head h1{grid-column:1;margin:0!important;text-align:left!important}.ed-head .top-menu-toggle{grid-column:2;position:static}.ed-head-actions{grid-column:3;position:static!important;justify-self:end}.top-menu-toggle{padding:7px 12px;border:1px solid var(--border);border-radius:3px;background:var(--panel);color:var(--fg);font-size:14px;cursor:pointer}.top-menu-toggle:hover{color:var(--accent);border-color:var(--accent)}.rule-title{font-weight:600}.rule-title.normal{color:var(--success)}.rule-title.inactive{color:var(--warn)}.rule-title.custom{color:var(--accent)}.info-pill{padding:2px 9px!important;border:1px solid var(--accent)!important;border-radius:999px!important;background:transparent!important;color:var(--accent)!important;font-weight:bold}.info-pill:hover{background:var(--accent)!important;color:var(--accent-fg)!important}</style>
+*{box-sizing:border-box}body{margin:0;padding:0}.ed-side{position:fixed;inset:0 auto 0 0;width:220px;background:var(--panel);border-right:1px solid var(--border);padding:10px;z-index:1000}.ed-side.closed{width:58px}.ed-side.closed .ed-text{display:none}.ed-toggle{width:36px}.ed-nav{margin-top:14px}.ed-nav button,.ed-nav a{display:flex;width:100%;padding:9px;border:0;background:transparent;color:var(--fg);text-decoration:none;text-align:left;border-radius:4px}.ed-nav button.active{background:var(--accent);color:var(--accent-fg)}.ed-main{margin-left:220px;padding:18px}.ed-side.closed~.ed-main{margin-left:58px}.ed-head{display:flex;justify-content:space-between;align-items:center}.ed-head-actions{display:flex;gap:7px}.ed-pane{display:none}.ed-pane.active{display:block}.ed-card{margin-top:14px;padding:14px;background:var(--panel);border:1px solid var(--border);border-radius:4px}.ed-save{margin-top:14px}.ed-side{display:none!important}.ed-main,.ed-side.closed~.ed-main{margin-left:0}.fk-menu-btn{display:block!important}.fk-menu-overlay{display:none}.fk-menu-overlay.is-visible{display:block}table th:nth-child(1){width:55px}table th:nth-child(2){width:230px}td:nth-child(2) button{margin-right:4px}@media(max-width:700px){.ed-side{width:58px}.ed-side .ed-text{display:none}.ed-main{margin-left:58px;padding:10px}}.ed-head{position:relative;justify-content:center!important;min-height:44px;padding-left:0!important;gap:14px}.ed-head .fk-menu-btn{display:block!important;position:static!important;top:auto!important;left:auto!important;padding:8px 12px!important;font-size:14px!important}.ed-head h1{margin:0;text-align:center}.ed-head-actions{position:absolute;right:0}.rules-table-layout{table-layout:auto}.rules-table-layout th,.rules-table-layout td{text-align:left}.rules-table-layout th:first-child,.rules-table-layout td:first-child{width:52px;white-space:nowrap}.rules-table-layout th:nth-child(2),.rules-table-layout td:nth-child(2){width:1%;white-space:nowrap}.rules-table-layout th:nth-child(3),.rules-table-layout td:nth-child(3){width:auto}.ed-head{display:grid!important;grid-template-columns:1fr auto 1fr!important;align-items:center!important;min-height:44px;padding-left:0!important;gap:12px}.ed-head h1{grid-column:1;margin:0!important;text-align:left!important}.ed-head .top-inline-nav{grid-column:2}.ed-head-actions{grid-column:3;position:static!important;justify-self:end}.top-menu-toggle{padding:7px 12px;border:1px solid var(--border);border-radius:3px;background:var(--panel);color:var(--fg);font-size:14px;cursor:pointer}.top-menu-toggle:hover{color:var(--accent);border-color:var(--accent)}.rule-title{font-weight:600}.rule-title.normal{color:var(--success)}.rule-title.inactive{color:var(--warn)}.rule-title.custom{color:var(--accent)}.info-pill{padding:2px 9px!important;border:1px solid var(--accent)!important;border-radius:999px!important;background:transparent!important;color:var(--accent)!important;font-weight:bold}.info-pill:hover{background:var(--accent)!important;color:var(--accent-fg)!important}#rule-modal .modal{width:min(1180px,calc(100vw - 32px));max-width:none}.rule-modal-actions{margin-top:12px;display:flex;align-items:center;justify-content:space-between;gap:8px}.rule-modal-actions-right{display:flex;gap:6px}.help-legend{display:grid;gap:8px;margin:0 0 14px}.help-legend-row{display:flex;align-items:center;gap:9px}.help-color{width:12px;height:12px;border-radius:50%;flex:0 0 12px}.help-color.green{background:var(--success)}.help-color.blue{background:var(--accent)}.help-color.yellow{background:var(--warn)}.help-rule-logic{padding:10px 12px;border:1px solid var(--border);border-radius:4px;background:var(--bg);line-height:1.5}</style>
 <style id="theme-tokens">
 :root{
 --bg:#ffffff;--fg:#141414;--muted:#5a5f66;--border:#d5d7dd;
@@ -763,21 +750,9 @@ a{color:var(--link)}
 }}
 </style>
 </head>
-<body><aside class="ed-side" id="edSide"><button type="button" class="ed-toggle" id="edToggle">☰</button><nav class="ed-nav"><a href="?"><span class="ed-text">Index</span></a><button type="button" class="active" data-pane="general"><span class="ed-text">Allgemein</span></button><button type="button" data-pane="rules"><span class="ed-text">Regeln</span></button></nav></aside><main class="ed-main"><div class="ed-head"><h1><?=$csvreporting_editorheading?></h1><button class="top-menu-toggle" data-fk-menu-btn>Menü</button><div class="ed-head-actions" id="ruleTopActions" style="display:none"><button type="button" onclick="openHelp()">Hilfe</button><button type="button" class="primary" onclick="openRule(-1)">+ Regel</button></div></div>
-<div class="fk-menu-overlay" data-fk-menu-overlay aria-hidden="true">
-<div class="fk-menu-backdrop" data-fk-menu-close></div>
-<div class="fk-menu-panel">
-<button class="fk-menu-close" data-fk-menu-close>×</button>
-<nav class="fk-menu-nav">
-<a href="?" target="_self" class="fk-menu-link">Home</a>
-<a href="?_page=edit&tab=general" class="fk-menu-link" data-editor-menu-pane="general">Allgemeine Einstellungen</a>
-<a href="?_page=edit&tab=rules" class="fk-menu-link" data-editor-menu-pane="rules">Regeln</a>
-</nav>
-</div>
-</div>
-<script>
-(function(){"use strict";var btn=document.querySelector("[data-fk-menu-btn]");var overlay=document.querySelector("[data-fk-menu-overlay]");var closers=document.querySelectorAll("[data-fk-menu-close]");var isOpen=false;if(!btn||!overlay)return;function openMenu(){if(isOpen)return;isOpen=true;overlay.classList.add("is-visible");overlay.setAttribute("aria-hidden","false");document.documentElement.style.overflow="hidden"}function closeMenu(){if(!isOpen)return;isOpen=false;overlay.classList.remove("is-visible");overlay.setAttribute("aria-hidden","true");document.documentElement.style.overflow=""}btn.addEventListener("click",function(e){e.stopPropagation();isOpen?closeMenu():openMenu()});closers.forEach(function(el){el.addEventListener("click",closeMenu)});overlay.addEventListener("click",function(e){var panel=overlay.querySelector(".fk-menu-panel");if(panel&&!panel.contains(e.target))closeMenu()});document.addEventListener("keydown",function(e){if(e.key==="Escape")closeMenu()})})();
-</script>
+<body><aside class="ed-side" id="edSide"><button type="button" class="ed-toggle" id="edToggle">☰</button><nav class="ed-nav"><a href="?"><span class="ed-text">Index</span></a><button type="button" class="active" data-pane="general"><span class="ed-text">Allgemein</span></button><button type="button" data-pane="rules"><span class="ed-text">Regeln</span></button></nav></aside><main class="ed-main"><div class="ed-head"><h1><?=$csvreporting_editorheading?></h1><nav class="top-inline-nav" aria-label="Editor-Navigation"><a href="?">Home</a><button type="button" data-editor-menu-pane="general">Allgemeine Einstellungen</button><button type="button" data-editor-menu-pane="rules">Regeln</button></nav><div class="ed-head-actions" id="ruleTopActions" style="display:none"><button type="button" onclick="openHelp()">Hilfe</button><button type="button" class="primary" onclick="openRule(-1)">+ Regel</button></div></div>
+
+
 
 <?php if($save_msg){?><div class="info"><?php echo h($save_msg);?></div><?php } ?>
 <?php if($load_error){?><div class="error"><?php echo h($load_error);?></div><?php } ?>
@@ -803,14 +778,15 @@ a{color:var(--link)}
 </form></main>
 <div class="modal-backdrop" id="rule-modal"><div class="modal"><div class="modal-header"><div class="modal-title">Regel bearbeiten</div><button type="button" onclick="closeRule()" class="modal-close">×</button></div>
 <label style="display:block"><span>Titel <small id="r-title-mode">Automatisch</small></span><input type="text" id="r-title" style="width:100%" placeholder="Leer lassen für automatischen Titel" oninput="updateTitleMode()"></label><label style="display:block;margin-top:8px">Notiz im Index-Overlay<textarea id="r-notes" rows="3"></textarea></label><label style="display:block;margin-top:8px">Interne Info<textarea id="r-info" rows="3"></textarea></label><label style="display:block;margin-top:8px">Bedingungen</label><div id="r-conds"></div><button type="button" class="small" onclick="addCond()" style="margin-top:6px">+ Bedingung</button><input type="hidden" id="r-desc">
-<div style="margin-top:10px;display:flex;justify-content:flex-end;gap:6px"><button type="button" onclick="closeRule()">Abbrechen</button><button type="button" class="primary" onclick="applyRule()">Übernehmen</button></div>
+<div class="rule-modal-actions"><button type="button" onclick="openHelp()">Hilfe</button><div class="rule-modal-actions-right"><button type="button" onclick="closeRule()">Abbrechen</button><button type="button" class="primary" onclick="applyRule()">Übernehmen</button></div></div>
 </div></div>
 <div class="modal-backdrop" id="info-modal"><div class="modal"><div class="modal-header"><div class="modal-title">Info</div><button type="button" onclick="closeInfo()" class="modal-close">×</button></div>
 <textarea id="info-text" style="width:100%;min-height:120px" placeholder="Optionaler Infotext zur Regel..."></textarea>
 <div style="margin-top:10px;display:flex;justify-content:flex-end;gap:6px"><button type="button" onclick="closeInfo()">Schließen</button><button type="button" class="primary" onclick="saveInfo()">Speichern</button></div>
 </div></div>
+<div class="modal-backdrop" id="delete-modal"><div class="modal" style="width:min(440px,calc(100vw - 30px))"><div class="modal-header"><div class="modal-title">Regel löschen</div><button type="button" onclick="closeDeleteRule()" class="modal-close">×</button></div><div style="margin:8px 0 16px;line-height:1.5">Soll diese Regel wirklich gelöscht werden?</div><div style="display:flex;justify-content:flex-end;gap:6px"><button type="button" onclick="closeDeleteRule()">Abbrechen</button><button type="button" class="primary" onclick="confirmDeleteRule()">Löschen</button></div></div></div>
 <div class="modal-backdrop" id="help-modal"><div class="modal"><div class="modal-header"><div class="modal-title">Regel-Muster Hilfe</div><button type="button" onclick="closeHelp()" class="modal-close">×</button></div>
-<ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.4"><li>* → Wildcard</li><li>n/a → leer oder N/A</li><li>&gt;500, &gt;=500, &lt;500, &lt;=500</li><li>100..500, -500..-100, -500..+100</li><li>500 → genau 500</li></ul>
+<div class="help-legend"><div class="help-legend-row"><span class="help-color green"></span><span>Grün: aktive Regel mit automatisch erzeugtem Titel</span></div><div class="help-legend-row"><span class="help-color blue"></span><span>Blau: aktive Regel mit individuellem Titel</span></div><div class="help-legend-row"><span class="help-color yellow"></span><span>Gelb: inaktive Regel</span></div></div><div class="help-rule-logic"><strong>Auswertung:</strong> Für die Anzeige einer CSV-Zeile muss mindestens eine aktive Regel zutreffen. Innerhalb einer Regel müssen alle Bedingungen zutreffen.</div><ul style="margin:14px 0 0;padding-left:18px;font-size:13px;line-height:1.5"><li><code>*</code> als Wildcard</li><li><code>n/a</code> für leer oder N/A</li><li><code>&gt;500</code>, <code>&gt;=500</code>, <code>&lt;500</code>, <code>&lt;=500</code></li><li><code>100..500</code> für Bereiche</li><li><code>500</code> für einen exakten Wert</li></ul>
 </div></div>
 <script>
 var DATA=<?php echo $data_json;?>;var COLS=<?php echo $columns_json;?>;
@@ -925,7 +901,10 @@ function applyGroupVisibility(){
 document.querySelectorAll("tr[data-group]").forEach(tr=>{let key=tr.getAttribute("data-group");let open=GROUP_OPEN[key]!==false;let icon=tr.querySelector(".group-icon");if(icon)icon.textContent=open?"▲":"▼";});
 document.querySelectorAll("tr[data-group-item]").forEach(tr=>{let key=tr.getAttribute("data-group-item");let open=GROUP_OPEN[key]!==false;tr.style.display=open?"":"none";});
 }
-function deleteRule(i){if(!confirm("Regel wirklich löschen?"))return;DATA.rules.splice(i,1);render();}
+var DELETE_RULE_INDEX=-1;
+function deleteRule(i){DELETE_RULE_INDEX=i;document.getElementById("delete-modal").style.display="flex";}
+function closeDeleteRule(){document.getElementById("delete-modal").style.display="none";DELETE_RULE_INDEX=-1;}
+function confirmDeleteRule(){if(DELETE_RULE_INDEX<0)return closeDeleteRule();DATA.rules.splice(DELETE_RULE_INDEX,1);closeDeleteRule();render();}
 function deactivateRule(i){
 var r=DATA.rules[i];if(!r||typeof r!=="object")return;
 var conds=Array.isArray(r.conditions)?r.conditions:[];
@@ -956,7 +935,7 @@ function render(){
 let tb=document.getElementById("rules-body");tb.innerHTML="";let active=[],inactive=[];DATA.rules.forEach((r,i)=>{if(!r||typeof r!=="object")return;((Array.isArray(r.conditions)&&r.conditions.length)?active:inactive).push({r,i})});
 active.sort((a,b)=>ruleKey(a.r).localeCompare(ruleKey(b.r),undefined,{numeric:true})||effectiveTitle(a.r).localeCompare(effectiveTitle(b.r),undefined,{numeric:true,sensitivity:"base"})||a.i-b.i);inactive.sort((a,b)=>effectiveTitle(a.r).localeCompare(effectiveTitle(b.r),undefined,{numeric:true,sensitivity:"base"})||a.i-b.i);
 function row(x,key){let r=x.r,i=x.i,en=Array.isArray(r.conditions)&&r.conditions.length>0;if(en)r.description=buildAutoDescFromConditions(r.conditions);let tr=document.createElement("tr");if(key)tr.setAttribute("data-group-item",key);tr.innerHTML="<td>"+(i+1)+"</td>";let ac=document.createElement("td");let e=document.createElement("button");e.type="button";e.className="small";e.textContent="Edit";e.disabled=!en;e.onclick=()=>openRule(i);let t=document.createElement("button");t.type="button";t.className="small";t.textContent=en?"Deaktivieren":"Aktivieren";t.onclick=()=>en?deactivateRule(i):activateRule(i);let d=document.createElement("button");d.type="button";d.className="small";d.textContent="X";d.onclick=()=>deleteRule(i);ac.append(e,t,d);if(r.info&&String(r.info).trim()!==""){let info=document.createElement("button");info.type="button";info.className="small info-pill";info.textContent="Info";info.onclick=()=>openInfo(i);ac.appendChild(info)}tr.appendChild(ac);let title=document.createElement("td");title.className="rule-title "+(!en?"inactive":(r.alternative_title&&String(r.alternative_title).trim()!==""?"custom":"normal"));title.textContent=effectiveTitle(r);tr.appendChild(title);tb.appendChild(tr)}
-if(inactive.length){let k="__inactive",g=document.createElement("tr");g.className="group-row";g.setAttribute("data-group",k);let icon=GROUP_OPEN[k]===false?"▼":"▲";g.innerHTML="<td colspan='3'><div class='group-title'><span>Inaktiv ("+inactive.length+")</span><span class='group-icon'>"+icon+"</span></div></td>";g.onclick=()=>toggleGroup(k);tb.appendChild(g);inactive.forEach(x=>row(x,k))}active.forEach(x=>row(x,""));applyGroupVisibility();}
+inactive.forEach(x=>row(x,""));active.forEach(x=>row(x,""));}
 
 
 let edit=-1;
@@ -1039,7 +1018,7 @@ if(idx>=0)openInfo(idx);
 };
 });
 }
-(function(){let actions=document.getElementById("ruleTopActions"),tab=document.getElementById("editor-tab");function showPane(name){document.querySelectorAll("[data-pane-content]").forEach(x=>x.classList.toggle("active",x.dataset.paneContent===name));if(tab)tab.value=name;actions.style.display=name==="rules"?"flex":"none";}document.querySelectorAll("[data-editor-menu-pane]").forEach(link=>link.onclick=function(e){e.preventDefault();showPane(link.dataset.editorMenuPane);let overlay=document.querySelector("[data-fk-menu-overlay]");if(overlay){overlay.classList.remove("is-visible");overlay.setAttribute("aria-hidden","true");}document.documentElement.style.overflow="";});let requested=new URLSearchParams(location.search).get("tab")||<?php echo json_encode((string)($_POST['tab']??'general'));?>;showPane(requested==="rules"?"rules":"general");})();
+(function(){let actions=document.getElementById("ruleTopActions"),tab=document.getElementById("editor-tab");function showPane(name){document.querySelectorAll("[data-pane-content]").forEach(x=>x.classList.toggle("active",x.dataset.paneContent===name));document.querySelectorAll("[data-editor-menu-pane]").forEach(x=>x.classList.toggle("active",x.dataset.editorMenuPane===name));if(tab)tab.value=name;actions.style.display=name==="rules"?"flex":"none";}document.querySelectorAll("[data-editor-menu-pane]").forEach(link=>link.onclick=function(){showPane(link.dataset.editorMenuPane);});let requested=new URLSearchParams(location.search).get("tab")||<?php echo json_encode((string)($_POST['tab']??'general'));?>;showPane(requested==="rules"?"rules":"general");})();
 render();
 </script>
 </body>
