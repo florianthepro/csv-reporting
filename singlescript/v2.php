@@ -1,4 +1,4 @@
-<?php //read and write
+<?php // write = ?_page=index/map/raw
 declare(strict_types=1);
 ///////////////////////
 $csvreporting_dwlextpage = 'https://hey.com/csv.csv'; #http<und/oder"s">s://domain.tld/csv.csv<oder"index.php">
@@ -11,10 +11,9 @@ $csvreporting_editortitle='CSV Rules Editor';
 $csvreporting_editorheading=$csvreporting_editortitle;
 $csvreporting_icon='https://raw.githubusercontent.com/florianthepro/csv-reporting/main/index.svg';
 $csvreporting_editoricon='https://raw.githubusercontent.com/florianthepro/csv-reporting/main/edit.svg';
+$csvreporting_theme='auto'; #'light' 'dark' 'auto'
+$csvreporting_edit_enabled=false; # true = ?_page=index
 ///////////////////////
-$csvreporting_theme='auto'; #'light' (fix hell) | 'dark' (fix dunkel) | 'auto' (dynamisch, folgt System)
-$csvreporting_edit_enabled=true; # true = Editor erreichbar | false = Editor gesperrt
-
 function csvreporting_detect_delimiter(string $csv):string{
 $firstLine=strtok($csv,"\r\n");
 if($firstLine===false)$firstLine=$csv;
