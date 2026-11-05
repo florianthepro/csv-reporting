@@ -324,19 +324,16 @@ function get_matching_rules($header,$row,$rules,$timestampCols){
   $matched=[];
   foreach($rules as $idx=>$rule){
     if(!rule_matches($rule,$header,$row,$timestampCols))continue;
-    $title=(string)($rule['description']??'Rule '.($idx+1));
-    $data=[];
-    $seen=[];
-    $conds=isset($rule['conditions'])&&is_array($rule['conditions'])?$rule['conditions']:[];
-    foreach($conds as $cond){
-      $col=trim((string)($cond['column']??''));
-      if($col===''||isset($seen[strtolower($col)]))continue;
-      $seen[strtolower($col)]=true;
-      $value=cell_by_colname($header,$row,$col);
-      $minutes=timestamp_to_minutes($value);
+    $generated=(string)($rule['description']??'Rule '.($idx+1));
+    $alternative=trim((string)($rule['alternative_title']??''));
+    $data=[];$seen=[];
+    foreach(($rule['conditions']??[]) as $cond){
+      $col=trim((string)($cond['column']??''));$key=strtolower($col);
+      if($col===''||isset($seen[$key]))continue;$seen[$key]=true;
+      $value=cell_by_colname($header,$row,$col);$minutes=timestamp_to_minutes($value);
       $data[]=['column'=>$col,'value'=>$minutes!==null?intval($minutes).' min':(trim((string)$value)===''?'n/a':(string)$value)];
     }
-    $matched[]=['idx'=>$idx,'title'=>$title,'data'=>$data];
+    $matched[]=['idx'=>$idx,'desc'=>$generated,'title'=>$alternative!==''?$alternative:$generated,'notes'=>(string)($rule['overlay_notes']??''),'data'=>$data];
   }
   return $matched;
 }
@@ -482,15 +479,11 @@ th{background:var(--panelhead);color:var(--fg)}
 .fk-menu-link{text-decoration:none;font-size:18px;color:var(--fg)}
 .fk-menu-link:hover{color:var(--accent)}
 .info-icon{cursor:pointer;font-weight:bold;color:var(--accent);margin-left:4px;font-size:14px}
-.rules-overlay{position:fixed;display:none;background:var(--panel);border:1px solid var(--accent);border-radius:4px;padding:12px;width:min(480px,calc(100vw - 32px));box-sizing:border-box;box-shadow:0 2px 10px var(--shadow);z-index:10000;max-height:min(70vh,520px);overflow-y:auto;color:var(--fg)}
+.rules-overlay{position:fixed;display:none;background:var(--panel);border:1px solid var(--accent);border-radius:4px;padding:12px;max-width:400px;box-shadow:0 2px 10px var(--shadow);z-index:10000;max-height:300px;overflow-y:auto;color:var(--fg)}
 .rules-overlay.visible{display:block}
 .rules-overlay-title{font-weight:bold;margin-bottom:8px;color:var(--accent);border-bottom:1px solid var(--accent);padding-bottom:6px;font-size:12px}
-.rules-overlay-item{padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;line-height:1.35;word-break:break-word}
-.rules-overlay-item:last-child{border-bottom:none}
-.rules-overlay-rule-title{font-weight:bold;color:var(--fg);margin-bottom:6px}
-.rules-overlay-data{display:grid;grid-template-columns:minmax(100px,auto) 1fr;gap:3px 10px}
-.rules-overlay-data-name{color:var(--muted);font-weight:bold}
-.rules-overlay-data-value{color:var(--fg);min-width:0;overflow-wrap:anywhere}
+.rules-overlay-item{padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;line-height:1.3;word-break:break-word}
+.rules-overlay-item:last-child{border-bottom:none}.rules-overlay-item{cursor:pointer}.rules-overlay-item:hover{color:var(--accent)}.rule-detail-overlay{position:fixed;inset:0;display:none;z-index:10001;background:rgba(0,0,0,.72);padding:24px;box-sizing:border-box}.rule-detail-overlay.visible{display:flex;align-items:center;justify-content:center}.rule-detail-panel{width:min(1040px,100%);max-height:100%;overflow:auto;background:var(--panel);color:var(--fg);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 32px var(--shadow);padding:24px;box-sizing:border-box}.rule-detail-header{display:flex;justify-content:space-between;gap:20px;border-bottom:1px solid var(--border);padding-bottom:16px;margin-bottom:20px}.rule-detail-title{font-size:22px;font-weight:bold;line-height:1.35;overflow-wrap:anywhere}.rule-detail-close{border:0;background:none;color:var(--fg);font-size:30px;cursor:pointer}.rule-detail-section{margin-top:20px}.rule-detail-heading{font-size:12px;text-transform:uppercase;color:var(--muted);font-weight:bold;margin-bottom:8px}.rule-detail-rule,.rule-detail-data{background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:14px}.rule-detail-rule,.rule-detail-notes{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55}.rule-detail-data{display:grid;grid-template-columns:minmax(150px,auto) 1fr;gap:7px 18px}.rule-detail-name{font-weight:bold;color:var(--muted)}.rule-detail-value{overflow-wrap:anywhere}@media(max-width:600px){.rule-detail-overlay{padding:8px}.rule-detail-panel{padding:16px}.rule-detail-data{grid-template-columns:1fr}}
 .filter-toggle{background:var(--panel);border:1px solid var(--border);border-radius:3px;padding:10px;margin-bottom:12px;cursor:pointer;user-select:none;display:flex;justify-content:space-between;align-items:center;color:var(--fg)}
 .filter-toggle:hover{background:var(--panel2)}
 .filter-toggle-icon{font-weight:bold;color:var(--accent)}
@@ -551,6 +544,7 @@ a{color:var(--link)}
 <div class="rules-overlay-title">Zutreffende Regeln:</div>
 <div id="rulesContent"></div>
 </div>
+<div class="rule-detail-overlay" id="ruleDetailOverlay"><div class="rule-detail-panel" role="dialog" aria-modal="true"><div class="rule-detail-header"><div class="rule-detail-title" id="ruleDetailTitle"></div><button type="button" class="rule-detail-close" onclick="closeRuleDetail()">×</button></div><div class="rule-detail-section"><div class="rule-detail-heading">Regel</div><div class="rule-detail-rule" id="ruleDetailRule"></div></div><div class="rule-detail-section" id="ruleNotesSection"><div class="rule-detail-heading">Hinweis / Notes</div><div class="rule-detail-notes" id="ruleDetailNotes"></div></div><div class="rule-detail-section"><div class="rule-detail-heading">Relevante CSV-Daten</div><div class="rule-detail-data" id="ruleDetailData"></div></div></div></div>
 <script>
 (function(){"use strict";var btn=document.querySelector("[data-fk-menu-btn]");var overlay=document.querySelector("[data-fk-menu-overlay]");var closers=document.querySelectorAll("[data-fk-menu-close]");var isOpen=false;if(!btn||!overlay)return;function openMenu(){if(isOpen)return;isOpen=true;overlay.classList.add("is-visible");overlay.setAttribute("aria-hidden","false");document.documentElement.style.overflow="hidden"}function closeMenu(){if(!isOpen)return;isOpen=false;overlay.classList.remove("is-visible");overlay.setAttribute("aria-hidden","true");document.documentElement.style.overflow=""}btn.addEventListener("click",function(e){e.stopPropagation();isOpen?closeMenu():openMenu()});closers.forEach(function(el){el.addEventListener("click",closeMenu)});overlay.addEventListener("click",function(e){var panel=overlay.querySelector(".fk-menu-panel");if(panel&&!panel.contains(e.target))closeMenu()});document.addEventListener("keydown",function(e){if(e.key==="Escape")closeMenu()})})();
 </script>
@@ -631,47 +625,10 @@ url.searchParams.set(key,value);
 }
 return url.toString();
 }
-function showRulesOverlay(event,rules){
-var overlay=document.getElementById('rulesOverlay');
-var content=document.getElementById('rulesContent');
-content.innerHTML='';
-rules.forEach(function(r){
-var item=document.createElement('div');
-item.className='rules-overlay-item';
-var title=document.createElement('div');
-title.className='rules-overlay-rule-title';
-title.textContent=r.title||'';
-item.appendChild(title);
-var data=document.createElement('div');
-data.className='rules-overlay-data';
-(r.data||[]).forEach(function(entry){
-var name=document.createElement('div');
-name.className='rules-overlay-data-name';
-name.textContent=entry.column;
-var value=document.createElement('div');
-value.className='rules-overlay-data-value';
-value.textContent=entry.value;
-data.appendChild(name);
-data.appendChild(value);
-});
-item.appendChild(data);
-content.appendChild(item);
-});
-overlay.classList.add('visible');
-var rect=overlay.getBoundingClientRect();
-var x=Math.max(8,Math.min(event.clientX+10,window.innerWidth-rect.width-8));
-var y=Math.max(8,Math.min(event.clientY+10,window.innerHeight-rect.height-8));
-overlay.style.left=x+'px';
-overlay.style.top=y+'px';
-setTimeout(function(){
-document.addEventListener('click',function hideOverlay(e){
-if(!overlay.contains(e.target)&&e.target!==event.target){
-overlay.classList.remove('visible');
-document.removeEventListener('click',hideOverlay);
-}
-});
-},0);
-}
+function showRuleDetail(r){var o=document.getElementById('ruleDetailOverlay');document.getElementById('ruleDetailTitle').textContent=r.title||r.desc||'';document.getElementById('ruleDetailRule').textContent=r.desc||'';var n=r.notes||'';document.getElementById('ruleDetailNotes').textContent=n;document.getElementById('ruleNotesSection').style.display=n.trim()===''?'none':'';var d=document.getElementById('ruleDetailData');d.innerHTML='';(r.data||[]).forEach(function(e){var a=document.createElement('div');a.className='rule-detail-name';a.textContent=e.column;var b=document.createElement('div');b.className='rule-detail-value';b.textContent=e.value;d.appendChild(a);d.appendChild(b)});o.classList.add('visible');document.documentElement.style.overflow='hidden'}
+function closeRuleDetail(){document.getElementById('ruleDetailOverlay').classList.remove('visible');document.documentElement.style.overflow=''}
+function showRulesOverlay(event,rules){var o=document.getElementById('rulesOverlay'),c=document.getElementById('rulesContent');c.innerHTML='';rules.forEach(function(r){var d=document.createElement('div');d.className='rules-overlay-item';var t=r.title||r.desc||'';d.textContent=t.length>60?t.substring(0,57)+'...':t;d.tabIndex=0;d.onclick=function(e){e.stopPropagation();o.classList.remove('visible');showRuleDetail(r)};c.appendChild(d)});o.style.left=Math.max(8,Math.min(event.clientX+10,window.innerWidth-420))+'px';o.style.top=Math.max(8,Math.min(event.clientY+10,window.innerHeight-320))+'px';o.classList.add('visible');setTimeout(function(){document.addEventListener('click',function h(e){if(!o.contains(e.target)&&e.target!==event.target){o.classList.remove('visible');document.removeEventListener('click',h)}})},0)}
+document.getElementById('ruleDetailOverlay').addEventListener('click',function(e){if(e.target===this)closeRuleDetail()});document.addEventListener('keydown',function(e){if(e.key==='Escape')closeRuleDetail()});
 </script>
 </body>
 </html>
@@ -761,7 +718,7 @@ th{background:var(--panelhead)}
 .view-toggle{display:inline-flex;align-items:center;gap:6px;margin-left:10px;font-size:13px}
 button:disabled{opacity:.45;cursor:not-allowed}
 a{color:var(--link)}
-</style>
+body{max-width:1500px;margin:18px auto;padding:0 18px;box-sizing:border-box}section{background:var(--panel);border:1px solid var(--border);border-radius:7px;padding:16px;margin-top:16px}section h2{font-size:17px;margin-bottom:12px}input[type=text],textarea,select{box-sizing:border-box;min-height:34px}button{min-height:32px}#rules-body tr:hover td{background:var(--panel2)}#rules-body td:nth-child(2){line-height:1.45;overflow-wrap:anywhere}.modal{width:min(920px,calc(100vw - 32px));padding:20px;box-sizing:border-box;border:1px solid var(--border);box-shadow:0 10px 35px var(--shadow)}.rule-field{display:block;margin-top:14px}.rule-field-title{display:block;font-size:12px;font-weight:bold;color:var(--muted);margin-bottom:5px}.rule-field input,.rule-field textarea{width:100%}#r-notes{min-height:120px;resize:vertical;line-height:1.5}#r-desc{background:var(--panel2)}.condition-row{background:var(--bg);border:1px solid var(--border);padding:8px;border-radius:5px}@media(max-width:700px){body{padding:0 8px}.condition-row{flex-wrap:wrap}.condition-row select{width:100%}section{padding:12px}}</style>
 <style id="theme-tokens">
 :root{
 --bg:#ffffff;--fg:#141414;--muted:#5a5f66;--border:#d5d7dd;
@@ -834,8 +791,10 @@ a{color:var(--link)}
 <div style="margin-top:14px"><button type="submit" class="primary">Speichern</button><button type="button" onclick="openHelp()" style="margin-left:8px">Hilfe</button></div>
 </form>
 <div class="modal-backdrop" id="rule-modal"><div class="modal"><div class="modal-header"><div class="modal-title">Regel bearbeiten</div><button type="button" onclick="closeRule()" class="modal-close">×</button></div>
-<label>Beschreibung (automatisch)</label><input type="text" id="r-desc" readonly>
-<label style="display:block;margin-top:8px">Bedingungen (UND)</label><div id="r-conds"></div><button type="button" class="small" onclick="addCond()" style="margin-top:6px">+ Bedingung</button>
+<label class="rule-field"><span class="rule-field-title">Alternativer Titel</span><input type="text" id="r-title" placeholder="Leer lassen für den automatisch generierten Titel"></label>
+<label class="rule-field"><span class="rule-field-title">Automatisch generierte Regel</span><input type="text" id="r-desc" readonly></label>
+<label class="rule-field"><span class="rule-field-title">Hinweis / Notes für das Regel-Overlay</span><textarea id="r-notes" placeholder="Zusätzliche Erklärung oder wichtiger Hinweis"></textarea></label>
+<label class="rule-field"><span class="rule-field-title">Bedingungen (UND)</span></label><div id="r-conds"></div><button type="button" class="small" onclick="addCond()" style="margin-top:8px">+ Bedingung</button>
 <div style="margin-top:10px;display:flex;justify-content:flex-end;gap:6px"><button type="button" onclick="closeRule()">Abbrechen</button><button type="button" class="primary" onclick="applyRule()">Übernehmen</button></div>
 </div></div>
 <div class="modal-backdrop" id="info-modal"><div class="modal"><div class="modal-header"><div class="modal-title">Info</div><button type="button" onclick="closeInfo()" class="modal-close">×</button></div>
@@ -1107,6 +1066,8 @@ let modal=document.getElementById("rule-modal");
 let r=(i>=0&&DATA.rules[i]&&typeof DATA.rules[i]==="object")?DATA.rules[i]:{conditions:[]};
 let c=document.getElementById("r-conds");c.innerHTML="";
 var conds=Array.isArray(r.conditions)?r.conditions:[];
+document.getElementById("r-title").value=typeof r.alternative_title==="string"?r.alternative_title:"";
+document.getElementById("r-notes").value=typeof r.overlay_notes==="string"?r.overlay_notes:"";
 if(conds.length>0)conds.forEach(x=>addCond(x));else addCond();
 updateDescFromDom();
 modal.style.display="flex";
@@ -1133,9 +1094,13 @@ let p=r.querySelector("input[type=text]").value.trim();
 let n=r.querySelector("input[type=checkbox]").checked;
 if(c!==""&&p!=="")list.push({column:c,pattern:p,negate:n});
 });
-let rule={conditions:list,description:"!..."};
+let previous=edit>=0&&DATA.rules[edit]&&typeof DATA.rules[edit]==="object"?DATA.rules[edit]:{};
+let rule=Object.assign({},previous,{conditions:list,description:"!..."});
 if(list.length>0)rule.description=buildAutoDescFromConditions(list);
-if(edit>=0){var __prev=DATA.rules[edit];if(__prev&&typeof __prev==="object"&&typeof __prev.info==="string"&&__prev.info!=="")rule.info=__prev.info;DATA.rules[edit]=rule;}else DATA.rules.push(rule);
+let alternativeTitle=document.getElementById("r-title").value.trim(),overlayNotes=document.getElementById("r-notes").value.trim();
+if(alternativeTitle!=="")rule.alternative_title=alternativeTitle;else delete rule.alternative_title;
+if(overlayNotes!=="")rule.overlay_notes=overlayNotes;else delete rule.overlay_notes;
+if(edit>=0)DATA.rules[edit]=rule;else DATA.rules.push(rule);
 closeRule();render();
 }
 function openHelp(){document.getElementById("help-modal").style.display="flex";}
