@@ -1,7 +1,7 @@
 <?php //read and write
 declare(strict_types=1);
 ///////////////////////
-$csvreporting_dwlextpage = 'https://hey.com/csv.csv'; #http
+$csvreporting_dwlextpage = 'https://hey.com/csv.csv'; #http<und/oder"s">s://domain.tld/csv.csv<oder"index.php">
 $csvreporting_dwlfilters=['row'=>['line'],];
 $csvreporting_title='Csv Reporting';
 $csvreporting_heading='Csv Reporting System';
