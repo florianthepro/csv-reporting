@@ -485,7 +485,7 @@ th{background:var(--panelhead);color:var(--fg)}
 .filter-item:last-child{margin-bottom:0}
 .filter-row select{padding:4px;border:1px solid var(--border);border-radius:3px;font-size:13px;width:100%;box-sizing:border-box;background:var(--bg);color:var(--fg)}
 .filter-label{font-size:12px;font-weight:bold;margin-bottom:4px;color:var(--muted)}
-</style>
+.index-topline{position:relative;display:flex;align-items:center;justify-content:center;min-height:44px;margin-bottom:10px}.index-topline .fk-menu-btn{position:static}.index-topline h2{margin:0;text-align:center}.index-topline{gap:14px}</style>
 <style id="theme-tokens">
 :root{
 --bg:#ffffff;--fg:#141414;--muted:#5a5f66;--border:#d5d7dd;
@@ -519,7 +519,7 @@ a{color:var(--link)}
 </style>
 </head>
 <body>
-<button class="fk-menu-btn" data-fk-menu-btn>☰</button>
+<div class="index-topline"><button class="fk-menu-btn" data-fk-menu-btn>Menü</button><h2><?=$csvreporting_heading?></h2></div>
 <div class="fk-menu-overlay" data-fk-menu-overlay aria-hidden="true">
 <div class="fk-menu-backdrop" data-fk-menu-close></div>
 <div class="fk-menu-panel">
@@ -539,7 +539,7 @@ a{color:var(--link)}
 <script>
 (function(){"use strict";var btn=document.querySelector("[data-fk-menu-btn]");var overlay=document.querySelector("[data-fk-menu-overlay]");var closers=document.querySelectorAll("[data-fk-menu-close]");var isOpen=false;if(!btn||!overlay)return;function openMenu(){if(isOpen)return;isOpen=true;overlay.classList.add("is-visible");overlay.setAttribute("aria-hidden","false");document.documentElement.style.overflow="hidden"}function closeMenu(){if(!isOpen)return;isOpen=false;overlay.classList.remove("is-visible");overlay.setAttribute("aria-hidden","true");document.documentElement.style.overflow=""}btn.addEventListener("click",function(e){e.stopPropagation();isOpen?closeMenu():openMenu()});closers.forEach(function(el){el.addEventListener("click",closeMenu)});overlay.addEventListener("click",function(e){var panel=overlay.querySelector(".fk-menu-panel");if(panel&&!panel.contains(e.target))closeMenu()});document.addEventListener("keydown",function(e){if(e.key==="Escape")closeMenu()})})();
 </script>
-<h2>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<?=$csvreporting_heading?></h2>
+
 <?php if($csvError):?><div class="error"><?php echo h($csvError);?></div><?php endif;?>
 <h3>Ergebnisse (<?php echo count($filtered);?>)</h3>
 <div class="filter-toggle" onclick="toggleFilters()">
@@ -735,7 +735,7 @@ th{background:var(--panelhead)}
 .view-toggle{display:inline-flex;align-items:center;gap:6px;margin-left:10px;font-size:13px}
 button:disabled{opacity:.45;cursor:not-allowed}
 a{color:var(--link)}
-*{box-sizing:border-box}body{margin:0;padding:0}.ed-side{position:fixed;inset:0 auto 0 0;width:220px;background:var(--panel);border-right:1px solid var(--border);padding:10px;z-index:1000}.ed-side.closed{width:58px}.ed-side.closed .ed-text{display:none}.ed-toggle{width:36px}.ed-nav{margin-top:14px}.ed-nav button,.ed-nav a{display:flex;width:100%;padding:9px;border:0;background:transparent;color:var(--fg);text-decoration:none;text-align:left;border-radius:4px}.ed-nav button.active{background:var(--accent);color:var(--accent-fg)}.ed-main{margin-left:220px;padding:18px}.ed-side.closed~.ed-main{margin-left:58px}.ed-head{display:flex;justify-content:space-between;align-items:center}.ed-head-actions{display:flex;gap:7px}.ed-pane{display:none}.ed-pane.active{display:block}.ed-card{margin-top:14px;padding:14px;background:var(--panel);border:1px solid var(--border);border-radius:4px}.ed-save{margin-top:14px}.fk-menu-btn,.fk-menu-overlay{display:none!important}table th:nth-child(1){width:55px}table th:nth-child(2){width:230px}td:nth-child(2) button{margin-right:4px}@media(max-width:700px){.ed-side{width:58px}.ed-side .ed-text{display:none}.ed-main{margin-left:58px;padding:10px}}</style>
+*{box-sizing:border-box}body{margin:0;padding:0}.ed-side{position:fixed;inset:0 auto 0 0;width:220px;background:var(--panel);border-right:1px solid var(--border);padding:10px;z-index:1000}.ed-side.closed{width:58px}.ed-side.closed .ed-text{display:none}.ed-toggle{width:36px}.ed-nav{margin-top:14px}.ed-nav button,.ed-nav a{display:flex;width:100%;padding:9px;border:0;background:transparent;color:var(--fg);text-decoration:none;text-align:left;border-radius:4px}.ed-nav button.active{background:var(--accent);color:var(--accent-fg)}.ed-main{margin-left:220px;padding:18px}.ed-side.closed~.ed-main{margin-left:58px}.ed-head{display:flex;justify-content:space-between;align-items:center}.ed-head-actions{display:flex;gap:7px}.ed-pane{display:none}.ed-pane.active{display:block}.ed-card{margin-top:14px;padding:14px;background:var(--panel);border:1px solid var(--border);border-radius:4px}.ed-save{margin-top:14px}.ed-side{display:none!important}.ed-main,.ed-side.closed~.ed-main{margin-left:0}.fk-menu-btn{display:block!important}.fk-menu-overlay{display:none}.fk-menu-overlay.is-visible{display:block}table th:nth-child(1){width:55px}table th:nth-child(2){width:230px}td:nth-child(2) button{margin-right:4px}@media(max-width:700px){.ed-side{width:58px}.ed-side .ed-text{display:none}.ed-main{margin-left:58px;padding:10px}}.ed-head{position:relative;justify-content:center!important;min-height:44px;padding-left:0!important;gap:14px}.ed-head .fk-menu-btn{display:block!important;position:static!important;top:auto!important;left:auto!important;padding:8px 12px!important;font-size:14px!important}.ed-head h1{margin:0;text-align:center}.ed-head-actions{position:absolute;right:0}.rules-table-layout{table-layout:auto}.rules-table-layout th,.rules-table-layout td{text-align:left}.rules-table-layout th:first-child,.rules-table-layout td:first-child{width:52px;white-space:nowrap}.rules-table-layout th:nth-child(2),.rules-table-layout td:nth-child(2){width:1%;white-space:nowrap}.rules-table-layout th:nth-child(3),.rules-table-layout td:nth-child(3){width:auto}</style>
 <style id="theme-tokens">
 :root{
 --bg:#ffffff;--fg:#141414;--muted:#5a5f66;--border:#d5d7dd;
@@ -763,17 +763,15 @@ a{color:var(--link)}
 }}
 </style>
 </head>
-<body><aside class="ed-side" id="edSide"><button type="button" class="ed-toggle" id="edToggle">☰</button><nav class="ed-nav"><a href="?"><span class="ed-text">Index</span></a><button type="button" class="active" data-pane="general"><span class="ed-text">Allgemein</span></button><button type="button" data-pane="rules"><span class="ed-text">Regeln</span></button></nav></aside><main class="ed-main"><div class="ed-head"><h1><?=$csvreporting_editorheading?></h1><div class="ed-head-actions" id="ruleTopActions" style="display:none"><button type="button" onclick="openHelp()">Hilfe</button><button type="button" class="primary" onclick="openRule(-1)">+ Regel</button></div></div>
-<button class="fk-menu-btn" data-fk-menu-btn>☰</button>
+<body><aside class="ed-side" id="edSide"><button type="button" class="ed-toggle" id="edToggle">☰</button><nav class="ed-nav"><a href="?"><span class="ed-text">Index</span></a><button type="button" class="active" data-pane="general"><span class="ed-text">Allgemein</span></button><button type="button" data-pane="rules"><span class="ed-text">Regeln</span></button></nav></aside><main class="ed-main"><div class="ed-head"><button class="fk-menu-btn" data-fk-menu-btn>Menü</button><h1><?=$csvreporting_editorheading?></h1><div class="ed-head-actions" id="ruleTopActions" style="display:none"><button type="button" onclick="openHelp()">Hilfe</button><button type="button" class="primary" onclick="openRule(-1)">+ Regel</button></div></div>
 <div class="fk-menu-overlay" data-fk-menu-overlay aria-hidden="true">
 <div class="fk-menu-backdrop" data-fk-menu-close></div>
 <div class="fk-menu-panel">
 <button class="fk-menu-close" data-fk-menu-close>×</button>
 <nav class="fk-menu-nav">
-<a href="?" target="_self" class="fk-menu-link">index</a>
-<a href="?_page=map" target="_self" class="fk-menu-link">map</a>
-<a href="?_page=raw" target="_self" class="fk-menu-link">raw</a>
-<a href="?_page=edit" target="_self" class="fk-menu-link">edit</a>
+<a href="?" target="_self" class="fk-menu-link">Home</a>
+<a href="?_page=edit&tab=general" class="fk-menu-link" data-editor-menu-pane="general">Allgemeine Einstellungen</a>
+<a href="?_page=edit&tab=rules" class="fk-menu-link" data-editor-menu-pane="rules">Regeln</a>
 </nav>
 </div>
 </div>
@@ -784,7 +782,7 @@ a{color:var(--link)}
 <?php if($save_msg){?><div class="info"><?php echo h($save_msg);?></div><?php } ?>
 <?php if($load_error){?><div class="error"><?php echo h($load_error);?></div><?php } ?>
 <form method="post" id="rules-form" onkeydown="if(event.key==='Enter'&&event.target.tagName==='INPUT')event.preventDefault()">
-<input type="hidden" name="action" value="save"><input type="hidden" name="json" id="rules-json">
+<input type="hidden" name="action" value="save"><input type="hidden" name="json" id="rules-json"><input type="hidden" name="tab" id="editor-tab" value="general">
 
 <div class="ed-pane active" data-pane-content="general"><div class="ed-card">
 <h2>Spalten ausblenden:</h2>
@@ -799,7 +797,7 @@ a{color:var(--link)}
 <h2>Regeln</h2>
 
 
-<table><thead><tr><th>#</th><th>Aktionen</th><th>Regel</th></tr></thead><tbody id="rules-body"></tbody></table>
+<table class="rules-table-layout"><thead><tr><th>#</th><th>Aktionen</th><th>Regel</th></tr></thead><tbody id="rules-body"></tbody></table>
 </div></div>
 <div class="ed-save"><button type="submit" class="primary">Speichern</button></div>
 </form></main>
@@ -1041,7 +1039,7 @@ if(idx>=0)openInfo(idx);
 };
 });
 }
-(function(){let side=document.getElementById("edSide"),toggle=document.getElementById("edToggle"),actions=document.getElementById("ruleTopActions");toggle.onclick=()=>side.classList.toggle("closed");document.querySelectorAll("[data-pane]").forEach(b=>b.onclick=function(){document.querySelectorAll("[data-pane]").forEach(x=>x.classList.remove("active"));document.querySelectorAll("[data-pane-content]").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.querySelector('[data-pane-content="'+b.dataset.pane+'"]').classList.add("active");actions.style.display=b.dataset.pane==="rules"?"flex":"none";});})();
+(function(){let actions=document.getElementById("ruleTopActions"),tab=document.getElementById("editor-tab");function showPane(name){document.querySelectorAll("[data-pane-content]").forEach(x=>x.classList.toggle("active",x.dataset.paneContent===name));if(tab)tab.value=name;actions.style.display=name==="rules"?"flex":"none";}document.querySelectorAll("[data-editor-menu-pane]").forEach(link=>link.onclick=function(e){e.preventDefault();showPane(link.dataset.editorMenuPane);let overlay=document.querySelector("[data-fk-menu-overlay]");if(overlay){overlay.classList.remove("is-visible");overlay.setAttribute("aria-hidden","true");}document.documentElement.style.overflow="";});let requested=new URLSearchParams(location.search).get("tab")||<?php echo json_encode((string)($_POST['tab']??'general'));?>;showPane(requested==="rules"?"rules":"general");})();
 render();
 </script>
 </body>
