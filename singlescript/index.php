@@ -580,7 +580,7 @@ a{color:var(--link)}
 </nav>
 </aside>
 </div>
-<div class="index-topline"><h2><?=$csvreporting_heading?></h2></div>
+<div class="index-topline"><h2><?=$csvreporting_heading?></h2><h3>Ergebnisse (<?php echo count($filtered);?>)<!--hier--></h3></div>
 
 <div class="rules-overlay" id="rulesOverlay">
 <div class="rules-overlay-title">Zutreffende Regeln:</div>
@@ -814,7 +814,7 @@ a{color:var(--link)}
 }}
 </style>
 </head>
-<body><main class="ed-main"><div class="ed-head"><h1><?=$csvreporting_editorheading?></h1><h3>Ergebnisse (<?php echo count($filtered);?>)<!--hier--></h3><nav class="top-inline-nav edit-inline-nav" aria-label="Editor-Bereiche"><button type="button" data-editor-section="rules">Rules</button><button type="button" data-editor-section="settings">Settings</button></nav><div class="ed-head-actions"><div id="settingsTopActions"><button type="button" onclick="openHelp('settings')">Hilfe</button><button type="submit" form="rules-form" class="primary"<?php if(!$csvreporting_json_writable)echo' disabled title="Konfigurationsdatei nicht schreibbar"';?>>Speichern</button></div><div id="ruleTopActions" style="display:none"><button type="button" onclick="openHelp('rules')">Hilfe</button><button type="submit" form="rules-form" class="primary"<?php if(!$csvreporting_json_writable)echo' disabled title="Konfigurationsdatei nicht schreibbar"';?>>Speichern</button></div><a href="./" class="editor-home">Zur Startseite</a></div></div>
+<body><main class="ed-main"><div class="ed-head"><h1><?=$csvreporting_editorheading?></h1><nav class="top-inline-nav edit-inline-nav" aria-label="Editor-Bereiche"><button type="button" data-editor-section="rules">Rules</button><button type="button" data-editor-section="settings">Settings</button></nav><div class="ed-head-actions"><div id="settingsTopActions"><button type="button" onclick="openHelp('settings')">Hilfe</button><button type="submit" form="rules-form" class="primary"<?php if(!$csvreporting_json_writable)echo' disabled title="Konfigurationsdatei nicht schreibbar"';?>>Speichern</button></div><div id="ruleTopActions" style="display:none"><button type="button" onclick="openHelp('rules')">Hilfe</button><button type="submit" form="rules-form" class="primary"<?php if(!$csvreporting_json_writable)echo' disabled title="Konfigurationsdatei nicht schreibbar"';?>>Speichern</button></div><a href="./" class="editor-home">Zur Startseite</a></div></div>
 <?php if(!$csvreporting_json_writable):?><div class="admin-hint warning"><strong>Speichern derzeit nicht möglich</strong><div>Die Konfigurationsdatei oder ihr Verzeichnis ist für den Webserver nicht schreibbar.</div><code id="permission-command"><?php echo h($csvreporting_permission_command);?></code><button type="button" onclick="copyAdminCommand('permission-command')">Befehl kopieren</button></div><?php endif;?>
 
 
