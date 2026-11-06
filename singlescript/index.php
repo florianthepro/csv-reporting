@@ -590,7 +590,7 @@ a{color:var(--link)}
 
 
 <?php if($csvError):?><div class="error"><?php echo h($csvError);?></div><?php endif;?>
-<h3>Ergebnisse (<?php echo count($filtered);?>)</h3>
+<!--hier<h3>Ergebnisse (<?php echo count($filtered);?>)</h3>-->
 <div class="filter-toggle" onclick="toggleFilters()">
 <span>Filter <span class="filter-toggle-icon" id="filterToggleIcon">▼</span></span>
 </div>
