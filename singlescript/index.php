@@ -580,7 +580,7 @@ a{color:var(--link)}
 </nav>
 </aside>
 </div>
-<div class="index-topline"><h2><?=$csvreporting_heading?></h2><h3>Ergebnisse (<?php echo count($filtered);?>)<!--hier--></h3></div>
+<div class="index-topline"><h2><?=$csvreporting_heading?></h2><h3>Ergebnisse (<?php echo count($filtered);?>)<!--hier1--></h3></div>
 
 <div class="rules-overlay" id="rulesOverlay">
 <div class="rules-overlay-title">Zutreffende Regeln:</div>
@@ -590,7 +590,7 @@ a{color:var(--link)}
 
 
 <?php if($csvError):?><div class="error"><?php echo h($csvError);?></div><?php endif;?>
-<!--hier<h3>Ergebnisse (<?php echo count($filtered);?>)</h3>-->
+<!--hier2<h3>Ergebnisse (<?php echo count($filtered);?>)</h3>-->
 <div class="filter-toggle" onclick="toggleFilters()">
 <span>Filter <span class="filter-toggle-icon" id="filterToggleIcon">▼</span></span>
 </div>
@@ -1340,9 +1340,9 @@ a{color:var(--link)}
 </style>
 </head>
 <body>
-<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:8px"><h2 style="margin:0"><?=$csvreporting_heading?></h2><a href="?_page=index" onclick="this.href=csvFilterPageUrl('index')" style="font-size:13px;color:var(--muted);text-decoration:none;white-space:nowrap">Zur Startseite</a></div>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:8px"><h2 style="margin:0"><?=$csvreporting_heading?></h2><h3>Ergebnisse (<?php echo count($filtered);?>)<!--hier--></h3><a href="?_page=index" onclick="this.href=csvFilterPageUrl('index')" style="font-size:13px;color:var(--muted);text-decoration:none;white-space:nowrap">Zur Startseite</a></div>
 <?php if($csvError):?><div class="error"><?php echo h($csvError);?></div><?php endif;?>
-<h3>Ergebnisse (<?php echo count($filtered);?>)</h3>
+<!--hier2<h3>Ergebnisse (<?php echo count($filtered);?>)</h3>-->
 <table>
 <thead>
 <tr>
@@ -1582,9 +1582,9 @@ a{color:var(--link)}
 </style>
 </head>
 <body>
-<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:8px"><h2 style="margin:0"><?=$csvreporting_heading?></h2><a href="?_page=index" onclick="this.href=csvFilterPageUrl('index')" style="font-size:13px;color:var(--muted);text-decoration:none;white-space:nowrap">Zur Startseite</a></div>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:8px"><h2 style="margin:0"><?=$csvreporting_heading?></h2><h3>Ergebnisse (<?php echo count($filtered);?>)<!--hier--></h3><a href="?_page=index" onclick="this.href=csvFilterPageUrl('index')" style="font-size:13px;color:var(--muted);text-decoration:none;white-space:nowrap">Zur Startseite</a></div>
 <?php if($csvError):?><div class="error"><?php echo h($csvError);?></div><?php endif;?>
-<h3>Ergebnisse (<?php echo count($filtered);?>)</h3>
+<!--hier2<h3>Ergebnisse (<?php echo count($filtered);?>)</h3>-->
 <div class="filter-toggle" onclick="toggleFilters()"><span>Filter <span class="filter-toggle-icon" id="filterToggleIcon">▼</span></span></div>
 <div class="filter-row" id="filterPanel">
 <?php foreach($showColumns as $col):$values=get_all_filter_values($header,$dataRows,$col,isset($timestampCols[$col]));if(count($values)===0)continue;?>
