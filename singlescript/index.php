@@ -1028,24 +1028,21 @@ render();
 function render(){
 let tb=document.getElementById("rules-body");tb.innerHTML="";let active=[],inactive=[];DATA.rules.forEach((r,i)=>{if(!r||typeof r!=="object")return;((Array.isArray(r.conditions)&&r.conditions.length)?active:inactive).push({r,i})});
 active.sort((a,b)=>ruleKey(a.r).localeCompare(ruleKey(b.r),undefined,{numeric:true})||effectiveTitle(a.r).localeCompare(effectiveTitle(b.r),undefined,{numeric:true,sensitivity:"base"})||a.i-b.i);inactive.sort((a,b)=>effectiveTitle(a.r).localeCompare(effectiveTitle(b.r),undefined,{numeric:true,sensitivity:"base"})||a.i-b.i);
-function row(x,key){let r=x.r,i=x.i,en=Array.isArray(r.conditions)&&r.conditions.length>0;if(en)r.description=buildAutoDescFromConditions(r.conditions);let tr=document.createElement("tr");if(key)tr.setAttribute("data-group-item",key);tr.innerHTML="<td>"+(i+1)+"</td>";let ac=document.createElement("td");let e=document.createElement("button");e.type="button";e.className="small";e.textContent="Edit";e.disabled=!en;e.onclick=()=>openRule(i);let t=document.createElement("button");t.type="button";t.className="small";t.textContent=en?"Deaktivieren":"Aktivieren";t.onclick=()=>en?deactivateRule(i):activateRule(i);let d=document.createElement("button");d.type="button";d.className="small";d.textContent="X";d.onclick=()=>deleteRule(i);ac.append(e,t,d);if(r.info&&String(r.info).trim()!==""){let info=document.createElement("button");info.type="button";info.className="small info-pill";info.textContent="Info";info.onclick=()=>openInfo(i);ac.appendChild(info)}tr.appendChild(ac);let title=document.createElement("td");title.className="rule-title "+(!en?"inactive":(r.alternative_title&&String(r.alternative_title).trim()!==""?"custom":"normal"));title.textContent=effectiveTitle(r);title.onclick=()=>openEditRuleDetail(i);tr.appendChild(title);tb.appendChild(tr)}
+function row(x,key){let r=x.r,i=x.i,en=Array.isArray(r.conditions)&&r.conditions.length>0;if(en)r.description=buildAutoDescFromConditions(r.conditions);let tr=document.createElement("tr");if(key)tr.setAttribute("data-group-item",key);tr.innerHTML="<td>"+(i+1)+"</td>";let ac=document.createElement("td");let e=document.createElement("button");e.type="button";e.className="small";e.textContent="Edit";e.onclick=()=>openRule(i);let t=document.createElement("button");t.type="button";t.className="small";t.textContent=en?"Deaktivieren":"Aktivieren";t.onclick=()=>en?deactivateRule(i):activateRule(i);let d=document.createElement("button");d.type="button";d.className="small";d.textContent="X";d.onclick=()=>deleteRule(i);ac.append(e,t,d);if(r.info&&String(r.info).trim()!==""){let info=document.createElement("button");info.type="button";info.className="small info-pill";info.textContent="Info";info.onclick=()=>openInfo(i);ac.appendChild(info)}tr.appendChild(ac);let title=document.createElement("td");title.className="rule-title "+(!en?"inactive":(r.alternative_title&&String(r.alternative_title).trim()!==""?"custom":"normal"));title.textContent=effectiveTitle(r);title.onclick=()=>openEditRuleDetail(i);tr.appendChild(title);tb.appendChild(tr)}
 inactive.forEach(x=>row(x,""));active.forEach(x=>row(x,""));}
 
 
 let edit=-1;
+let editWasInactive=false;
 function openEditRuleDetail(i){let r=DATA.rules[i];if(!r||typeof r!=="object")return;let active=Array.isArray(r.conditions)&&r.conditions.length>0,conds=active?r.conditions:(Array.isArray(r.stash_conditions)?r.stash_conditions:[]);document.getElementById("edit-detail-title").textContent=effectiveTitle(r)||"Regel";document.getElementById("edit-detail-status").textContent=active?"Aktiv":"Inaktiv";document.getElementById("edit-detail-rule").textContent=conds.length?buildAutoDescFromConditions(conds):dec5(stripInactivePrefix(r.description||""));let notes=String(r.overlay_notes||""),info=String(r.info||"");document.getElementById("edit-detail-overlay").textContent=notes;document.getElementById("edit-detail-info").textContent=info;document.getElementById("edit-detail-overlay-label").style.display=document.getElementById("edit-detail-overlay").style.display=notes?"":"none";document.getElementById("edit-detail-info-label").style.display=document.getElementById("edit-detail-info").style.display=info?"":"none";document.getElementById("edit-detail-modal").style.display="flex";}
 function closeEditRuleDetail(){document.getElementById("edit-detail-modal").style.display="none";}
 function openRule(i){
 edit=i;
-if(i>=0){
-let rr=DATA.rules[i];
-let cc=(rr&&typeof rr==="object"&&Array.isArray(rr.conditions))?rr.conditions:[];
-if(cc.length===0){alert("Diese Regel ist deaktiviert und nicht editierbar. Bitte zuerst aktivieren.");return;}
-}
 let modal=document.getElementById("rule-modal");
 let r=(i>=0&&DATA.rules[i]&&typeof DATA.rules[i]==="object")?DATA.rules[i]:{conditions:[]};
+editWasInactive=i>=0&&(!Array.isArray(r.conditions)||r.conditions.length===0);
 let c=document.getElementById("r-conds");c.innerHTML="";
-var conds=Array.isArray(r.conditions)?r.conditions:[];
+var conds=editWasInactive&&Array.isArray(r.stash_conditions)?r.stash_conditions:(Array.isArray(r.conditions)?r.conditions:[]);
 document.getElementById("r-title").value=typeof r.alternative_title==="string"?r.alternative_title:"";
 document.getElementById("r-notes").value=typeof r.overlay_notes==="string"?r.overlay_notes:"";
 document.getElementById("r-info").value=typeof r.info==="string"?r.info:"";
@@ -1076,7 +1073,16 @@ let n=r.querySelector("input[type=checkbox]").checked;
 if(c!==""&&p!=="")list.push({column:c,pattern:p,negate:n});
 });
 let previous=edit>=0&&DATA.rules[edit]&&typeof DATA.rules[edit]==="object"?DATA.rules[edit]:{};
-let rule=Object.assign({},previous,{conditions:list,description:list.length?buildAutoDescFromConditions(list):"!..."});
+let autoDescription=buildAutoDescFromConditions(list);
+let rule=Object.assign({},previous);
+if(editWasInactive){
+rule.conditions=[];
+rule.stash_conditions=list;
+rule.description="!..."+(autoDescription?(" "+enc5(autoDescription)):"");
+}else{
+rule.conditions=list;
+rule.description=list.length?autoDescription:"!...";
+}
 let title=document.getElementById("r-title").value.trim(),notes=document.getElementById("r-notes").value.trim(),info=document.getElementById("r-info").value.trim();
 if(title)rule.alternative_title=title;else delete rule.alternative_title;if(notes)rule.overlay_notes=notes;else delete rule.overlay_notes;if(info)rule.info=info;else delete rule.info;
 if(edit>=0)DATA.rules[edit]=rule;else DATA.rules.push(rule);
