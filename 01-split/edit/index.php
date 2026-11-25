@@ -6,7 +6,7 @@ $csvreporting_defaults=[
 'dwlfilters'=>['row'=>['line']],
 'editortitle'=>'CSV Rules Editor',
 'editorheading'=>'CSV Rules Editor',
-'editoricon'=>'../favicon.svg',
+'editoricon'=>'./favicon.svg',
 'indexicon'=>'./favicon.svg', //need to be checked ($csvreporting_defaults)
 'theme'=>'auto'
 ];
