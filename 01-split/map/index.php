@@ -289,44 +289,9 @@ if(rule_matches($r,$header,$row,$timestampCols)){$filtered[]=$row;break;}
 <link rel="icon" type="image/svg+xml" href="<?=$csvreporting_icon?>">
 <!--<meta http-equiv="refresh" content="1">-->
 <title><?=$csvreporting_title?></title>
-<style>
-body{font-family:Arial,Helvetica,sans-serif;margin:18px;background:var(--bg);color:var(--fg)}
-table{border-collapse:collapse;width:100%;background:var(--bg)}
-th,td{border:1px solid var(--border);padding:6px 8px;text-align:left;background:var(--bg);color:var(--fg)}
-th{background:var(--panelhead);color:var(--fg)}
-.error{color:var(--danger);font-weight:bold;margin-bottom:8px}
-a{color:var(--link)}
-</style>
-<style id="theme-tokens">
-:root{
---bg:#ffffff;--fg:#141414;--muted:#5a5f66;--border:#d5d7dd;
---panel:#f5f6f8;--panel2:#e9ebef;--panelhead:#eef0f3;
---accent:#0a63ff;--accent-fg:#ffffff;--link:#0a58ca;
---danger:#b3261e;--danger-bg:#fde7e7;--danger-fg:#7f1512;
---success:#1a7f37;--success-bg:#e6f4ea;--warn:#8a6d00;--warn-bg:#fff4cf;
---ctrl-bg:#141414;--ctrl-fg:#ffffff;--shadow:rgba(0,0,0,.18);
-}
-:root[data-theme="dark"]{
---bg:#0f1113;--fg:#e8e8ea;--muted:#a6adb6;--border:#2b3038;
---panel:#17191d;--panel2:#20242a;--panelhead:#20242a;
---accent:#5b9bff;--accent-fg:#0a0d12;--link:#7db0ff;
---danger:#ff6b6b;--danger-bg:#3f1d1d;--danger-fg:#ffd9d9;
---success:#5bd47e;--success-bg:#163a22;--warn:#e6c34a;--warn-bg:#3a3212;
---ctrl-bg:#20242a;--ctrl-fg:#e8e8ea;--shadow:rgba(0,0,0,.6);
-}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]):not([data-theme="dark"]){
---bg:#0f1113;--fg:#e8e8ea;--muted:#a6adb6;--border:#2b3038;
---panel:#17191d;--panel2:#20242a;--panelhead:#20242a;
---accent:#5b9bff;--accent-fg:#0a0d12;--link:#7db0ff;
---danger:#ff6b6b;--danger-bg:#3f1d1d;--danger-fg:#ffd9d9;
---success:#5bd47e;--success-bg:#163a22;--warn:#e6c34a;--warn-bg:#3a3212;
---ctrl-bg:#20242a;--ctrl-fg:#e8e8ea;--shadow:rgba(0,0,0,.6);
-}}
-</style>
-<style>
-:root[data-theme="dark"] td[style*="ffe5e5"]{background:var(--danger-bg)!important;color:var(--danger-fg)!important}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]):not([data-theme="dark"]) td[style*="ffe5e5"]{background:var(--danger-bg)!important;color:var(--danger-fg)!important}}
-</style>
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles-theme-tokens.css">
+<link rel="stylesheet" href="styles-2.css">
 </head>
 <body>
 <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:8px"><h2 style="margin:0"><?=$csvreporting_heading?></h2><a href="../" onclick="this.href=csvFilterPageUrl()" style="font-size:13px;color:var(--muted);text-decoration:none;white-space:nowrap">Zur Startseite</a></div>
