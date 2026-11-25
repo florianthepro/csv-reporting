@@ -473,7 +473,7 @@ if($pass)$filtered[]=$row;
 <link rel="icon" type="image/svg+xml" href="<?=$csvreporting_icon?>">
 <title><?=$csvreporting_title?></title>
 <link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="theme-tokens.css">
 <link rel="stylesheet" href="style-2.css">
 </head>
 <body>
