@@ -275,7 +275,9 @@ if($passFilters)$filtered[]=$row;
 <meta name="color-scheme" content="light dark">
 <link rel="icon" type="image/svg+xml" href="<?=$csvreporting_icon?>">
 <title><?=$csvreporting_title?></title>
-#cssstylesheet
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles-theme-tokens.css">
+<link rel="stylesheet" href="styles-2.css">
 </head>
 <body>
 <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:8px"><h2 style="margin:0"><?=$csvreporting_heading?></h2><a href="../" onclick="this.href=csvFilterPageUrl()" style="font-size:13px;color:var(--muted);text-decoration:none;white-space:nowrap">Zur Startseite</a></div>
