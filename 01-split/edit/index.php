@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-$csvreporting_jsonfile=__DIR__.'/../data/data.json';
+$csvreporting_jsonfile=__DIR__.'/../data/config.json';
 $csvreporting_defaults=[
 'dwlextpage'=>'https://hey.com/csv.csv',
 'dwlfilters'=>['row'=>['line']],
@@ -151,7 +151,7 @@ $ok=@file_put_contents($csvreporting_jsonfile,json_encode($decoded,JSON_PRETTY_P
 $save_msg=$ok===false?'Fehler beim Speichern.':'Gespeichert.';$parsed=$decoded;}}
 if(!isset($parsed)){
 $raw=@file_get_contents($csvreporting_jsonfile);
-if($raw===false){$parsed=$default;$load_error=is_file($csvreporting_jsonfile)?'data.json ist vorhanden, kann vom Webserver aber nicht gelesen werden: '.$csvreporting_jsonfile:'data.json wurde nicht gefunden: '.$csvreporting_jsonfile;}else{$parsed=json_decode((string)$raw,true);if(!is_array($parsed)){$parsed=$default;$load_error='data.json ist ungültig: '.json_last_error_msg().' – Standardwerte wurden nur im Editor geladen und nicht geschrieben.';}}}
+if($raw===false){$parsed=$default;$load_error=is_file($csvreporting_jsonfile)?'config.json ist vorhanden, kann vom Webserver aber nicht gelesen werden: '.$csvreporting_jsonfile:'config.json wurde nicht gefunden: '.$csvreporting_jsonfile;}else{$parsed=json_decode((string)$raw,true);if(!is_array($parsed)){$parsed=$default;$load_error='config.json ist ungültig: '.json_last_error_msg().' – Standardwerte wurden nur im Editor geladen und nicht geschrieben.';}}}
 $header_line=(string)($parsed['header_line']??'');
 $show_columns=is_array($parsed['show_columns']??null)?$parsed['show_columns']:[];
 $column_renames=is_array($parsed['column_renames']??null)?$parsed['column_renames']:[];
