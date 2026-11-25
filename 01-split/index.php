@@ -472,9 +472,9 @@ if($pass)$filtered[]=$row;
 <meta name="color-scheme" content="light dark">
 <link rel="icon" type="image/svg+xml" href="<?=$csvreporting_icon?>">
 <title><?=$csvreporting_title?></title>
-<link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="theme-tokens.css">
-<link rel="stylesheet" href="style-2.css">
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles-theme-tokens.css">
+<link rel="stylesheet" href="styles-2.css">
 </head>
 <body>
 <button type="button" class="fk-menu-btn" id="fkMenuOpen" aria-label="Menü öffnen">☰</button>
