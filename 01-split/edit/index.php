@@ -6,7 +6,8 @@ $csvreporting_defaults=[
 'dwlfilters'=>['row'=>['line']],
 'editortitle'=>'CSV Rules Editor',
 'editorheading'=>'CSV Rules Editor',
-'editoricon'=>'https://raw.githubusercontent.com/florianthepro/csv-reporting/main/edit.svg',
+'editoricon'=>'../favicon.svg',
+'indexicon'=>'../favicon.svg',
 'theme'=>'auto'
 ];
 $csvreporting_settings=$csvreporting_defaults;
@@ -298,7 +299,7 @@ function copyAdminCommand(id){var el=document.getElementById(id);if(el&&navigato
 var DATA=<?php echo $data_json;?>;var COLS=<?php echo $columns_json;?>;
 if(!DATA||typeof DATA!=="object")DATA={};if(!Array.isArray(COLS))COLS=[];if(!Array.isArray(DATA.rules))DATA.rules=[];if(!Array.isArray(DATA.show_columns))DATA.show_columns=[];
 if(!DATA.column_renames||Array.isArray(DATA.column_renames))DATA.column_renames={};if(!DATA.column_links||Array.isArray(DATA.column_links))DATA.column_links={};DATA.enable_links=!!DATA.enable_links;
-var APP_DEFAULTS={dwlextpage:"https://hey.com/csv.csv",dwlfilters:{row:["line"]},title:"Csv Reporting",heading:"Csv Reporting System",editortitle:"CSV Rules Editor",editorheading:"CSV Rules Editor",icon:"https://raw.githubusercontent.com/florianthepro/csv-reporting/main/index.svg",editoricon:"https://raw.githubusercontent.com/florianthepro/csv-reporting/main/edit.svg",theme:"auto"};
+var APP_DEFAULTS={dwlextpage:"https://hey.com/csv.csv",dwlfilters:{row:["line"]},title:"Csv Reporting",heading:"Csv Reporting System",editortitle:"CSV Rules Editor",editorheading:"CSV Rules Editor",icon:"../favicon.svg",editoricon:"./favicon.svg",theme:"auto"};
 if(!DATA.app_settings||typeof DATA.app_settings!=="object"||Array.isArray(DATA.app_settings))DATA.app_settings={};DATA.app_settings=Object.assign({},APP_DEFAULTS,DATA.app_settings);
 var CSV_VALUES=<?php echo json_encode($csvMemoryRows??[],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE);?>;var CSV_VALUE_MAP={};if(Array.isArray(CSV_VALUES)&&CSV_VALUES.length){let h=CSV_VALUES[0]||[];h.forEach((col,i)=>{CSV_VALUE_MAP[String(col)]=[...new Set(CSV_VALUES.slice(1).map(r=>String((r||[])[i]??"").trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"de",{numeric:true}))})}
 function filterSelect(options,value,onchange){let s=document.createElement("select");options.forEach(([v,t])=>{let o=document.createElement("option");o.value=v;o.textContent=t;s.appendChild(o)});if(options.some(x=>x[0]===value))s.value=value;else s.value="__custom__";if(onchange)s.addEventListener("change",onchange);return s}
