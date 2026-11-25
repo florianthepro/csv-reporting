@@ -473,7 +473,8 @@ if($pass)$filtered[]=$row;
 <link rel="icon" type="image/svg+xml" href="<?=$csvreporting_icon?>">
 <title><?=$csvreporting_title?></title>
 <link rel="stylesheet" href="style.css">
-
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style-2.css">
 </head>
 <body>
 <button type="button" class="fk-menu-btn" id="fkMenuOpen" aria-label="Menü öffnen">☰</button>
