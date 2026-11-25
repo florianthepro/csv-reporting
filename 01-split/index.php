@@ -1,20 +1,20 @@
 <?php
 declare(strict_types=1);
-$csvreporting_jsonfile=__DIR__.'/data/data.json';
+$csvreporting_jsonfile=__DIR__.'/data/config.json';
 if(!is_readable($csvreporting_jsonfile)){
 http_response_code(500);
-exit('data.json konnte nicht gelesen werden.');
+exit('config.json konnte nicht gelesen werden.');
 }
 $csvreporting_boot_raw=file_get_contents($csvreporting_jsonfile);
 $csvreporting_data=json_decode((string)$csvreporting_boot_raw,true);
 if(!is_array($csvreporting_data)){
 http_response_code(500);
-exit('data.json enthält kein gültiges JSON.');
+exit('config.json enthält kein gültiges JSON.');
 }
 $csvreporting_settings=$csvreporting_data['app_settings']??null;
 if(!is_array($csvreporting_settings)){
 http_response_code(500);
-exit('app_settings fehlen in data.json.');
+exit('app_settings fehlen in config.json.');
 }
 $csvreporting_dwlextpage=trim((string)($csvreporting_settings['dwlextpage']??''));
 $csvreporting_dwlfilters=$csvreporting_settings['dwlfilters']??[];
@@ -24,15 +24,15 @@ $csvreporting_icon=(string)($csvreporting_settings['icon']??'');
 $csvreporting_theme=(string)($csvreporting_settings['theme']??'');
 if($csvreporting_dwlextpage===''){
 http_response_code(500);
-exit('dwlextpage fehlt in data.json.');
+exit('dwlextpage fehlt in config.json.');
 }
 if(!is_array($csvreporting_dwlfilters)){
 http_response_code(500);
-exit('dwlfilters ist in data.json ungültig.');
+exit('dwlfilters ist in config.json ungültig.');
 }
 if(!in_array($csvreporting_theme,['auto','light','dark'],true)){
 http_response_code(500);
-exit('theme ist in data.json ungültig.');
+exit('theme ist in config.json ungültig.');
 }
 function csvreporting_detect_delimiter(string $csv):string{
 $firstLine=strtok($csv,"\r\n");
