@@ -275,63 +275,7 @@ if($passFilters)$filtered[]=$row;
 <meta name="color-scheme" content="light dark">
 <link rel="icon" type="image/svg+xml" href="<?=$csvreporting_icon?>">
 <title><?=$csvreporting_title?></title>
-<style>
-body{font-family:Arial,Helvetica,sans-serif;margin:18px;background:var(--bg);color:var(--fg)}
-table{border-collapse:collapse;width:100%;background:var(--bg)}
-th,td{border:1px solid var(--border);padding:6px 8px;text-align:left;background:var(--bg);color:var(--fg)}
-th{background:var(--panelhead);color:var(--fg)}
-.error{color:var(--danger);font-weight:bold;margin-bottom:8px}
-a{color:var(--link)}
-.fk-menu-btn{position:fixed;top:10px;left:10px;z-index:999999;background:var(--ctrl-bg);color:var(--ctrl-fg);border:none;padding:10px 14px;font-size:20px;cursor:pointer;border-radius:4px}
-.fk-menu-overlay{position:fixed;inset:0;display:none;z-index:999998}
-.fk-menu-overlay.is-visible{display:block}
-.fk-menu-backdrop{position:absolute;inset:0;background:rgba(0,0,0,0.55)}
-.fk-menu-panel{position:absolute;top:0;left:0;width:260px;height:100%;background:var(--panel);padding:20px;box-sizing:border-box;transform:translateX(-100%);transition:transform .25s ease-out}
-.fk-menu-overlay.is-visible .fk-menu-panel{transform:translateX(0)}
-.fk-menu-close{background:none;border:none;font-size:28px;cursor:pointer;margin-left:auto;display:block;color:var(--fg)}
-.fk-menu-nav{margin-top:20px;display:flex;flex-direction:column;gap:12px}
-.fk-menu-link{text-decoration:none;font-size:18px;color:var(--fg)}
-.fk-menu-link:hover{color:var(--accent)}
-.filter-toggle{background:var(--panel);border:1px solid var(--border);border-radius:3px;padding:10px;margin-bottom:12px;cursor:pointer;user-select:none;display:flex;justify-content:space-between;align-items:center;color:var(--fg)}
-.filter-toggle:hover{background:var(--panel2)}
-.filter-toggle-icon{font-weight:bold;color:var(--accent)}
-.filter-row{background:var(--panel);padding:12px;margin-bottom:12px;border-radius:3px;border:1px solid var(--border);display:none}
-.filter-row.visible{display:block}
-.filter-item{margin-bottom:10px}
-.filter-item:last-child{margin-bottom:0}
-.filter-row select{padding:4px;border:1px solid var(--border);border-radius:3px;font-size:13px;width:100%;box-sizing:border-box;background:var(--bg);color:var(--fg)}
-.filter-label{font-size:12px;font-weight:bold;margin-bottom:4px;color:var(--muted)}
-</style>
-<style id="theme-tokens">
-:root{
---bg:#ffffff;--fg:#141414;--muted:#5a5f66;--border:#d5d7dd;
---panel:#f5f6f8;--panel2:#e9ebef;--panelhead:#eef0f3;
---accent:#0a63ff;--accent-fg:#ffffff;--link:#0a58ca;
---danger:#b3261e;--danger-bg:#fde7e7;--danger-fg:#7f1512;
---success:#1a7f37;--success-bg:#e6f4ea;--warn:#8a6d00;--warn-bg:#fff4cf;
---ctrl-bg:#141414;--ctrl-fg:#ffffff;--shadow:rgba(0,0,0,.18);
-}
-:root[data-theme="dark"]{
---bg:#0f1113;--fg:#e8e8ea;--muted:#a6adb6;--border:#2b3038;
---panel:#17191d;--panel2:#20242a;--panelhead:#20242a;
---accent:#5b9bff;--accent-fg:#0a0d12;--link:#7db0ff;
---danger:#ff6b6b;--danger-bg:#3f1d1d;--danger-fg:#ffd9d9;
---success:#5bd47e;--success-bg:#163a22;--warn:#e6c34a;--warn-bg:#3a3212;
---ctrl-bg:#20242a;--ctrl-fg:#e8e8ea;--shadow:rgba(0,0,0,.6);
-}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]):not([data-theme="dark"]){
---bg:#0f1113;--fg:#e8e8ea;--muted:#a6adb6;--border:#2b3038;
---panel:#17191d;--panel2:#20242a;--panelhead:#20242a;
---accent:#5b9bff;--accent-fg:#0a0d12;--link:#7db0ff;
---danger:#ff6b6b;--danger-bg:#3f1d1d;--danger-fg:#ffd9d9;
---success:#5bd47e;--success-bg:#163a22;--warn:#e6c34a;--warn-bg:#3a3212;
---ctrl-bg:#20242a;--ctrl-fg:#e8e8ea;--shadow:rgba(0,0,0,.6);
-}}
-</style>
-<style>
-:root[data-theme="dark"] td[style*="ffe5e5"]{background:var(--danger-bg)!important;color:var(--danger-fg)!important}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]):not([data-theme="dark"]) td[style*="ffe5e5"]{background:var(--danger-bg)!important;color:var(--danger-fg)!important}}
-</style>
+#cssstylesheet
 </head>
 <body>
 <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:8px"><h2 style="margin:0"><?=$csvreporting_heading?></h2><a href="../" onclick="this.href=csvFilterPageUrl()" style="font-size:13px;color:var(--muted);text-decoration:none;white-space:nowrap">Zur Startseite</a></div>
