@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-$csvreporting_jsonfile=__DIR__.'/../data.json';
+$csvreporting_jsonfile=__DIR__.'/../data/data.json';
 $csvreporting_defaults=[
 'dwlextpage'=>'https://hey.com/csv.csv',
 'dwlfilters'=>['row'=>['line']],
