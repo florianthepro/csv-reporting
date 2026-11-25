@@ -1,19 +1,19 @@
 <?php
 declare(strict_types=1);
-$csvreporting_jsonfile = __DIR__ . '/../data/data.json';
+$csvreporting_jsonfile = __DIR__ . '/../data/config.json';
 if (!is_readable($csvreporting_jsonfile)) {
     http_response_code(500);
-    exit('data.json konnte nicht gelesen werden.');
+    exit('config.json konnte nicht gelesen werden.');
 }
 $csvreporting_data = json_decode((string) file_get_contents($csvreporting_jsonfile), true);
 if (!is_array($csvreporting_data)) {
     http_response_code(500);
-    exit('data.json enthält kein gültiges JSON.');
+    exit('config.json enthält kein gültiges JSON.');
 }
 $csvreporting_json = json_encode($csvreporting_data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 if (!is_string($csvreporting_json)) {
     http_response_code(500);
-    exit('data.json konnte nicht verarbeitet werden.');
+    exit('config.json konnte nicht verarbeitet werden.');
 }
 ?>
 <!doctype html>
