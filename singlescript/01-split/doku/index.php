@@ -16,7 +16,6 @@ if (!is_string($csvreporting_json)) {
     exit('data.json konnte nicht verarbeitet werden.');
 }
 ?>
-?>
 <!doctype html>
 <html lang="de">
 
