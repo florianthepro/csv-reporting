@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-$csvreporting_jsonfile=__DIR__.'/data.json';
+$csvreporting_jsonfile=__DIR__.'/data/data.json';
 if(!is_readable($csvreporting_jsonfile)){
 http_response_code(500);
 exit('data.json konnte nicht gelesen werden.');
