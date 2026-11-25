@@ -7,7 +7,7 @@ $csvreporting_defaults=[
 'editortitle'=>'CSV Rules Editor',
 'editorheading'=>'CSV Rules Editor',
 'editoricon'=>'../favicon.svg',
-'indexicon'=>'../favicon.svg',
+'indexicon'=>'./favicon.svg', //need to be checked ($csvreporting_defaults)
 'theme'=>'auto'
 ];
 $csvreporting_settings=$csvreporting_defaults;
