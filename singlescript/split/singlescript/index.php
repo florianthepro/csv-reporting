@@ -1,40 +1,40 @@
 <?php
 declare(strict_types=1);
-///////////////////////
-$csvreporting_edit_enabled=true; //./edit/
-///////////////////////
 $csvreporting_jsonfile='data.json';
 $csvreporting_jsondir=__DIR__.DIRECTORY_SEPARATOR.$csvreporting_jsonfile;
-$csvreporting_defaults=[
-'dwlextpage'=>'https://hey.com/csv.csv',
-'dwlfilters'=>['row'=>['line']],
-'title'=>'Csv Reporting',
-'heading'=>'Csv Reporting System',
-'editortitle'=>'CSV Rules Editor',
-'editorheading'=>'CSV Rules Editor',
-'icon'=>'https://raw.githubusercontent.com/florianthepro/csv-reporting/main/index.svg',
-'editoricon'=>'https://raw.githubusercontent.com/florianthepro/csv-reporting/main/edit.svg',
-'theme'=>'auto'
-];
-$csvreporting_settings=$csvreporting_defaults;
-if(is_readable($csvreporting_jsondir)){
-$csvreporting_boot_raw=@file_get_contents($csvreporting_jsondir);
-$csvreporting_boot=@json_decode((string)$csvreporting_boot_raw,true);
-if(is_array($csvreporting_boot)&&isset($csvreporting_boot['app_settings'])&&is_array($csvreporting_boot['app_settings'])){
-foreach($csvreporting_defaults as $csvreporting_key=>$csvreporting_default){
-if(array_key_exists($csvreporting_key,$csvreporting_boot['app_settings']))$csvreporting_settings[$csvreporting_key]=$csvreporting_boot['app_settings'][$csvreporting_key];
+if(!is_readable($csvreporting_jsondir)){
+http_response_code(500);
+exit('data.json konnte nicht gelesen werden.');
 }
+$csvreporting_boot_raw=file_get_contents($csvreporting_jsondir);
+$csvreporting_data=json_decode((string)$csvreporting_boot_raw,true);
+if(!is_array($csvreporting_data)){
+http_response_code(500);
+exit('data.json enthält kein gültiges JSON.');
 }
+$csvreporting_settings=$csvreporting_data['app_settings']??null;
+if(!is_array($csvreporting_settings)){
+http_response_code(500);
+exit('app_settings fehlen in data.json.');
 }
-$csvreporting_dwlextpage=is_string($csvreporting_settings['dwlextpage'])?trim($csvreporting_settings['dwlextpage']):$csvreporting_defaults['dwlextpage'];
-$csvreporting_dwlfilters=is_array($csvreporting_settings['dwlfilters'])?$csvreporting_settings['dwlfilters']:$csvreporting_defaults['dwlfilters'];
-$csvreporting_title=is_string($csvreporting_settings['title'])?$csvreporting_settings['title']:$csvreporting_defaults['title'];
-$csvreporting_heading=is_string($csvreporting_settings['heading'])?$csvreporting_settings['heading']:$csvreporting_defaults['heading'];
-$csvreporting_editortitle=is_string($csvreporting_settings['editortitle'])?$csvreporting_settings['editortitle']:$csvreporting_defaults['editortitle'];
-$csvreporting_editorheading=is_string($csvreporting_settings['editorheading'])?$csvreporting_settings['editorheading']:$csvreporting_editortitle;
-$csvreporting_icon=is_string($csvreporting_settings['icon'])?$csvreporting_settings['icon']:$csvreporting_defaults['icon'];
-$csvreporting_editoricon=is_string($csvreporting_settings['editoricon'])?$csvreporting_settings['editoricon']:$csvreporting_defaults['editoricon'];
-$csvreporting_theme=in_array($csvreporting_settings['theme'],['auto','light','dark'],true)?$csvreporting_settings['theme']:'auto';
+$csvreporting_dwlextpage=trim((string)($csvreporting_settings['dwlextpage']??''));
+$csvreporting_dwlfilters=$csvreporting_settings['dwlfilters']??[];
+$csvreporting_title=(string)($csvreporting_settings['title']??'');
+$csvreporting_heading=(string)($csvreporting_settings['heading']??'');
+$csvreporting_icon=(string)($csvreporting_settings['icon']??'');
+$csvreporting_theme=(string)($csvreporting_settings['theme']??'');
+if($csvreporting_dwlextpage===''){
+http_response_code(500);
+exit('dwlextpage fehlt in data.json.');
+}
+if(!is_array($csvreporting_dwlfilters)){
+http_response_code(500);
+exit('dwlfilters ist in data.json ungültig.');
+}
+if(!in_array($csvreporting_theme,['auto','light','dark'],true)){
+http_response_code(500);
+exit('theme ist in data.json ungültig.');
+}
 function csvreporting_detect_delimiter(string $csv):string{
 $firstLine=strtok($csv,"\r\n");
 if($firstLine===false)$firstLine=$csv;
@@ -146,16 +146,6 @@ return [false,'Remote nicht erreichbar: PHP/SQL-CSV-Abruf per POST und direkter 
 
 [$csvreporting_live_ok,$csvreporting_live_message,$csvreporting_csv_memory]=csvreporting_remote_fetch($csvreporting_dwlextpage,$csvreporting_dwlfilters);
 function h($s){return htmlspecialchars((string)$s,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8');}
-function load_rules($path){
-if(!is_readable($path))return['show_columns'=>[],'rules'=>[],'enable_links'=>false,'column_links'=>[]];
-$json=@file_get_contents($path);
-$data=@json_decode($json,true);
-if(!is_array($data))$data=[];
-if(!isset($data['show_columns'])||!is_array($data['show_columns']))$data['show_columns']=[];
-if(!isset($data['rules'])||!is_array($data['rules']))$data['rules']=[];
-if(!isset($data['enable_links']))$data['enable_links']=false;
-if(!isset($data['column_links'])||!is_array($data['column_links']))$data['column_links']=[];
-return $data;}
 function parse_csv_string($csvContent){return csvreporting_parse_csv((string)$csvContent);}
 function load_csv($path){global $csvreporting_csv_memory;if(!is_string($csvreporting_csv_memory??null))return null;return parse_csv_string($csvreporting_csv_memory);}
 function col_index($header,$colName){
@@ -421,7 +411,7 @@ function build_cell_link($enableLinks,$columnLinks,$idColumn,$header,$row,$colNa
   return $href;
 }
 
-$rulesData=load_rules($csvreporting_jsondir);
+$rulesData=$csvreporting_data;
 $showColumns=$rulesData['show_columns']??[];
 $rules=$rulesData['rules']??[];
 $enableLinks=!empty($rulesData['enable_links']);
